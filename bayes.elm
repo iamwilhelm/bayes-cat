@@ -7,6 +7,7 @@ import Window
 import Mouse
 import Time exposing (..)
 import List
+import Random
 
 view : (Int, Int) -> App -> Element
 view (width, height) app =
@@ -37,9 +38,29 @@ square =
 
 update : Input -> App -> App
 update input app =
-  { app |
-    entities = List.map (updateEntity input) app.entities
-  }
+  let
+    entities = sourceTurtles input app.entities
+      |> collisionDetect
+      |> updateEntities input
+  in
+    { app |
+      entities = entities
+    }
+
+sourceTurtles : Input -> List Entity -> List Entity
+sourceTurtles input entities =
+  if List.length entities < 20 then
+    createTurtle input :: entities
+  else
+    entities
+
+collisionDetect : List Entity -> List Entity
+collisionDetect entities =
+  List.filter (\e -> (getPos e).y > -400.0) entities
+
+updateEntities : Input -> List Entity -> List Entity
+updateEntities input entities =
+  List.map (updateEntity input) entities
 
 updateEntity : Input -> Entity -> Entity
 updateEntity input entity =
@@ -50,7 +71,7 @@ updateEntity input entity =
       }
     Turtle object ->
       Turtle { object |
-        pos = { x = object.pos.x, y = object.pos.y - 2 }
+        pos = { x = object.pos.x, y = object.pos.y - 5 }
       }
 
 -------------- Model methods
@@ -62,8 +83,8 @@ type alias App =
 initApp : App
 initApp = {
     entities = [
-      Cursor { pos = { x = 0.0, y = 0.0 } }
-    , Turtle { pos = { x = 0.0, y = 0.0 } }
+      Cursor { pos = { x = 0.0, y = 400.0 } }
+    , Turtle { pos = { x = 0.0, y = 400.0 } }
     ]
   }
 
@@ -78,6 +99,22 @@ type alias Object =
 
 type alias Vec2 =
   { x : Float, y : Float }
+
+createTurtle : Input -> Entity
+createTurtle input =
+  Turtle { pos = {
+      x = fst <| Random.generate (Random.float 200 -200) (Random.initialSeed <| floor <| Time.inMilliseconds input.delta)
+    , y = 200.0
+    }
+  }
+
+getPos : Entity -> Vec2
+getPos entity =
+  case entity of
+    Cursor object ->
+      object.pos
+    Turtle object ->
+      object.pos
 
 
 -------------- Input methods
