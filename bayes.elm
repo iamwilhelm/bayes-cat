@@ -38,29 +38,36 @@ square =
 
 update : Input -> App -> App
 update input app =
-  let
-    entities = sourceTurtles input app.entities
-      |> collisionDetect
-      |> updateEntities input
-  in
-    { app |
-      entities = entities
-    }
+  sourceTurtles app
+    |> collisionDetect
+    |> updateEntities input
 
-sourceTurtles : Input -> List Entity -> List Entity
-sourceTurtles input entities =
-  if List.length entities < 20 then
-    createTurtle input :: entities
+--makeActors : App -> App
+
+sourceTurtles : App -> App
+sourceTurtles app =
+  if List.length app.entities < 60 then
+    let
+      (xPos, newSeed) = Random.generate (Random.float 200 -200) app.seed
+    in
+      { app |
+        entities = createTurtle xPos :: app.entities
+      , seed = newSeed
+      }
   else
-    entities
+    app
 
-collisionDetect : List Entity -> List Entity
-collisionDetect entities =
-  List.filter (\e -> (getPos e).y > -400.0) entities
+collisionDetect : App -> App
+collisionDetect app =
+  { app |
+    entities = List.filter (\e -> (getPos e).y > -400.0) app.entities
+  }
 
-updateEntities : Input -> List Entity -> List Entity
-updateEntities input entities =
-  List.map (updateEntity input) entities
+updateEntities : Input -> App -> App
+updateEntities input app =
+  { app |
+    entities = List.map (updateEntity input) app.entities
+  }
 
 updateEntity : Input -> Entity -> Entity
 updateEntity input entity =
@@ -78,6 +85,7 @@ updateEntity input entity =
 
 type alias App =
   { entities: List Entity
+  , seed: Random.Seed
   }
 
 initApp : App
@@ -86,11 +94,10 @@ initApp = {
       Cursor { pos = { x = 0.0, y = 400.0 } }
     , Turtle { pos = { x = 0.0, y = 400.0 } }
     ]
+  , seed = Random.initialSeed 0
   }
 
-type Entity =
-  Cursor Object
-  | Turtle Object
+type Entity = Cursor Object | Turtle Object
 
 type alias Object =
   {
@@ -100,10 +107,10 @@ type alias Object =
 type alias Vec2 =
   { x : Float, y : Float }
 
-createTurtle : Input -> Entity
-createTurtle input =
+createTurtle : Float -> Entity
+createTurtle xPos =
   Turtle { pos = {
-      x = fst <| Random.generate (Random.float 200 -200) (Random.initialSeed <| floor <| Time.inMilliseconds input.delta)
+      x = xPos
     , y = 200.0
     }
   }
@@ -121,7 +128,8 @@ getPos entity =
 
 type alias Input =
   { mouse : (Float, Float)
-  , delta: Time }
+  , delta: Time
+  }
 
 delta : Signal Time
 delta = Signal.map inSeconds (fps 25)
