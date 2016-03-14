@@ -39,10 +39,9 @@ square =
 update : Input -> App -> App
 update input app =
   sourceTurtles app
+    |> borderCollisionDetect input
     |> collisionDetect
     |> updateEntities input
-
---makeActors : App -> App
 
 sourceTurtles : App -> App
 sourceTurtles app =
@@ -60,11 +59,25 @@ sourceTurtles app =
         seed = newSeed0
       }
 
+borderCollisionDetect : Input -> App -> App
+borderCollisionDetect input app =
+  let
+    withinBounds entity =
+      case entity of
+        Cursor _ ->
+          True
+        Turtle _ ->
+          (getPos entity).y > -400.0
+          && (getPos entity).x > -500.0
+          && (getPos entity).x < 500.0
+  in
+    { app |
+      entities = List.filter withinBounds app.entities
+    }
+
 collisionDetect : App -> App
 collisionDetect app =
-  { app |
-    entities = List.filter (\e -> (getPos e).y > -400.0) app.entities
-  }
+  app
 
 updateEntities : Input -> App -> App
 updateEntities input app =
