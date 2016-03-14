@@ -46,16 +46,19 @@ update input app =
 
 sourceTurtles : App -> App
 sourceTurtles app =
-  if List.length app.entities < 60 then
-    let
-      (xPos, newSeed) = Random.generate (Random.float 200 -200) app.seed
-    in
+  let
+    (shouldCreate, newSeed1) = Random.generate Random.bool app.seed
+    (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
+  in
+    if List.length app.entities < 60 && shouldCreate == True then
       { app |
         entities = createTurtle xPos :: app.entities
-      , seed = newSeed
+      , seed = newSeed0
       }
-  else
-    app
+    else
+      { app |
+        seed = newSeed0
+      }
 
 collisionDetect : App -> App
 collisionDetect app =
@@ -78,7 +81,7 @@ updateEntity input entity =
       }
     Turtle object ->
       Turtle { object |
-        pos = { x = object.pos.x, y = object.pos.y - 5 }
+        pos = { x = object.pos.x, y = object.pos.y - 300 * input.delta }
       }
 
 -------------- Model methods
@@ -111,7 +114,7 @@ createTurtle : Float -> Entity
 createTurtle xPos =
   Turtle { pos = {
       x = xPos
-    , y = 200.0
+    , y = 400.0
     }
   }
 
@@ -132,7 +135,7 @@ type alias Input =
   }
 
 delta : Signal Time
-delta = Signal.map inSeconds (fps 25)
+delta = Signal.map inSeconds (fps 30)
 
 screenToWorld : (Int, Int) -> (Int, Int) -> (Float, Float)
 screenToWorld (width, height) (x, y) =
