@@ -107,8 +107,16 @@ type alias App =
 initApp : App
 initApp = {
     entities = [
-      Cursor { pos = { x = 0.0, y = 400.0 } }
-    , Turtle { pos = { x = 0.0, y = 400.0 } }
+      Cursor {
+        pos = { x = 0.0, y = 400.0 }
+      , vel = { x = 0.0, y = -10.0 }
+      , acc = { x = 0.0, y = -10.0 }
+      }
+    , Turtle {
+        pos = { x = 0.0, y = 400.0 }
+      , vel = { x = 0.0, y = -10.0 }
+      , acc = { x = 0.0, y = -10.0 }
+      }
     ]
   , seed = Random.initialSeed 0
   }
@@ -118,6 +126,8 @@ type Entity = Cursor Object | Turtle Object
 type alias Object =
   {
     pos : Vec2
+  , vel : Vec2
+  , acc : Vec2
   }
 
 type alias Vec2 =
@@ -125,10 +135,10 @@ type alias Vec2 =
 
 createTurtle : Float -> Entity
 createTurtle xPos =
-  Turtle { pos = {
-      x = xPos
-    , y = 400.0
-    }
+  Turtle {
+    pos = { x = xPos , y = 400.0 }
+  , vel = { x = 0.0, y = -10.0 }
+  , acc = { x = 0.0, y = -10.0 }
   }
 
 getPos : Entity -> Vec2
