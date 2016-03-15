@@ -9,36 +9,91 @@ import Time exposing (..)
 import List
 import Random
 
-view : (Int, Int) -> App -> Element
-view (width, height) app =
-  collage width height
-  <| List.map viewEntity app.entities
 
-viewEntity : Entity -> Form
-viewEntity entity =
+-------------- Model methods
+
+type alias App =
+  { entities: List Entity
+  , seed: Random.Seed
+  }
+
+initApp : App
+initApp = {
+    entities = [
+      Cursor createObject
+    , Turtle createObject
+    , createLabeler ("Coin", Color.green) ("No Coin", Color.lightGray)
+    ]
+  , seed = Random.initialSeed 0
+  }
+
+type Entity = Cursor Object | Turtle Object | Labeler Object
+
+type alias Object =
+  {
+    pos : Vec2
+  , vel : Vec2
+  , acc : Vec2
+  , dim : Vec2
+  , color: Color
+  , labels: List Label
+  }
+
+createObject : Object
+createObject =
+  { pos = { x = 0.0, y = 400.0 }
+  , vel = { x = 0.0, y = -10.0 }
+  , acc = { x = 0.0, y = -10.0 }
+  , dim = { x = 10.0, y = 10.0 }
+  , color = Color.darkGrey
+  , labels = []
+  }
+
+type alias Vec2 =
+  { x : Float, y : Float }
+
+createTurtle : Float -> Entity
+createTurtle xPos =
+  Turtle {
+    pos = { x = xPos , y = 400.0 }
+  , vel = { x = 0.0, y = -10.0 }
+  , acc = { x = 0.0, y = -10.0 }
+  , dim = { x = 10.0, y = 10.0 }
+  , color = Color.darkGrey
+  , labels = []
+  }
+
+type alias Label =
+  { name : String, color : Color, percent : Float }
+
+createLabel : String -> Color -> Float -> Label
+createLabel name colour percent =
+  { name = name, color = colour, percent = percent }
+
+createLabeler : (String, Color) -> (String, Color) -> Entity
+createLabeler (fstName, fstColour) (sndName, sndColour) =
+  let
+    object = createObject
+  in
+    Labeler { object |
+      pos = { x = 0.0, y = 200.0 }
+    , dim = { x = 400.0, y = 10.0 }
+    , labels = [
+        createLabel fstName fstColour 0.3
+      , createLabel sndName sndColour 0.7
+      ]
+    }
+
+
+getPos : Entity -> Vec2
+getPos entity =
   case entity of
     Cursor object ->
-      move (object.pos.x, object.pos.y) <| cursorView object.color
+      object.pos
     Turtle object ->
-      move (object.pos.x, object.pos.y) <| turtleView object.color
+      object.pos
     Labeler object ->
-      move (object.pos.x, object.pos.y) <| labelerView object.dim object.labels
-
-cursorView : Color -> Form
-cursorView colour =
-  filled colour <| ngon 3 10
-
-
-turtleView : Color -> Form
-turtleView colour =
-  filled colour <| circle 10
-
-labelerView : Vec2 -> List Label -> Form
-labelerView dim labels =
-  let
-    labelLengths = List.map (\l -> (l, l.percent * dim.x)) labels
-  in
-    group (List.map (\(label, len) -> filled label.color <| rect len dim.y) labelLengths)
+      object.pos
 
 -------------- Update methods
 
@@ -107,90 +162,38 @@ updateEntity input entity =
     Labeler object ->
       Labeler object
 
--------------- Model methods
+---------------- View methods
 
-type alias App =
-  { entities: List Entity
-  , seed: Random.Seed
-  }
+view : (Int, Int) -> App -> Element
+view (width, height) app =
+  collage width height
+  <| List.map viewEntity app.entities
 
-initApp : App
-initApp = {
-    entities = [
-      Cursor createObject
-    , Turtle createObject
-    , createLabeler ("Coin", Color.green) ("No Coin", Color.lightGray)
-    ]
-  , seed = Random.initialSeed 0
-  }
-
-type Entity = Cursor Object | Turtle Object | Labeler Object
-
-type alias Object =
-  {
-    pos : Vec2
-  , vel : Vec2
-  , acc : Vec2
-  , dim : Vec2
-  , color: Color
-  , labels: List Label
-  }
-
-createObject : Object
-createObject =
-  { pos = { x = 0.0, y = 400.0 }
-  , vel = { x = 0.0, y = -10.0 }
-  , acc = { x = 0.0, y = -10.0 }
-  , dim = { x = 10.0, y = 10.0 }
-  , color = Color.darkGrey
-  , labels = []
-  }
-
-type alias Vec2 =
-  { x : Float, y : Float }
-
-createTurtle : Float -> Entity
-createTurtle xPos =
-  Turtle {
-    pos = { x = xPos , y = 400.0 }
-  , vel = { x = 0.0, y = -10.0 }
-  , acc = { x = 0.0, y = -10.0 }
-  , dim = { x = 10.0, y = 10.0 }
-  , color = Color.darkGrey
-  , labels = []
-  }
-
-type alias Label =
-  { name : String, color : Color, percent : Float }
-
-createLabel : String -> Color -> Float -> Label
-createLabel name colour percent =
-  { name = name, color = colour, percent = percent }
-
-createLabeler : (String, Color) -> (String, Color) -> Entity
-createLabeler (fstName, fstColour) (sndName, sndColour) =
-  let
-    object = createObject
-  in
-    Labeler { object |
-      dim = { x = 400.0, y = 10.0 }
-    , labels = [
-        createLabel fstName fstColour 0.3
-      , createLabel sndName sndColour 0.7
-      ]
-    }
-
-
-getPos : Entity -> Vec2
-getPos entity =
+viewEntity : Entity -> Form
+viewEntity entity =
   case entity of
     Cursor object ->
-      object.pos
+      move (object.pos.x, object.pos.y) <| cursorView object.color
     Turtle object ->
-      object.pos
+      move (object.pos.x, object.pos.y) <| turtleView object.color
     Labeler object ->
-      object.pos
+      move (object.pos.x, object.pos.y) <| labelerView object.dim object.labels
 
+cursorView : Color -> Form
+cursorView colour =
+  filled colour <| ngon 3 10
+
+
+turtleView : Color -> Form
+turtleView colour =
+  filled colour <| circle 10
+
+labelerView : Vec2 -> List Label -> Form
+labelerView dim labels =
+  let
+    labelLengths = List.map (\l -> (l, l.percent * dim.x)) labels
+  in
+    group (List.map (\(label, len) -> filled label.color <| rect len dim.y) labelLengths)
 
 -------------- Input methods
 
