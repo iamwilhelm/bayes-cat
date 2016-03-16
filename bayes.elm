@@ -9,8 +9,68 @@ import Time exposing (..)
 import List
 import Random
 
+import Spatial
+import Corporeal
+import Vec
+
 
 -------------- Model methods
+
+type Entity = CursorType Cursor
+  | TurtleType Turtle
+  | LabelerType Labeler
+
+type alias Cursor =
+  { space: Spatial.Spatial
+  , corp: Corporeal.Corporeal
+  }
+
+initCursor =
+  CursorType {
+    space = Spatial.initSpatial
+  , corp = Corporeal.initCorporeal
+  }
+
+type alias Turtle =
+  { space: Spatial.Spatial
+  , corp: Corporeal.Corporeal
+  }
+
+initTurtle =
+  TurtleType {
+    space = Spatial.createSpatial (0, 400)
+  , corp = Corporeal.initCorporeal
+  }
+
+createTurtle : Vec.Vec -> Entity
+createTurtle pos =
+  TurtleType {
+    space = Spatial.createSpatial pos
+  , corp = Corporeal.initCorporeal
+  }
+
+type alias Label =
+  { name : String
+  , color : Color
+  }
+
+createLabel : String -> Color -> Label
+createLabel name colour =
+  { name = name, color = colour }
+
+type alias Labeler =
+  { space: Spatial.Spatial
+  , corp: Corporeal.Corporeal
+  , labels: List Label
+  }
+
+initLabeler : Entity
+initLabeler =
+  LabelerType {
+    space = Spatial.createSpatial (0, 200)
+  , corp = Corporeal.initCorporeal
+  , labels = [createLabel "Cancer" Color.red]
+  }
 
 type alias App =
   { entities: List Entity
@@ -20,80 +80,12 @@ type alias App =
 initApp : App
 initApp = {
     entities = [
-      Cursor createObject
-    , Turtle createObject
-    , createLabeler ("Coin", Color.green) ("No Coin", Color.lightGray)
+      initCursor
+    , initTurtle
+    , initLabeler
     ]
   , seed = Random.initialSeed 0
   }
-
-type Entity = Cursor Object | Turtle Object | Labeler Object
-
-type alias Object =
-  {
-    pos : Vec2
-  , vel : Vec2
-  , acc : Vec2
-  , dim : Vec2
-  , color: Color
-  , labels: List Label
-  }
-
-createObject : Object
-createObject =
-  { pos = { x = 0.0, y = 400.0 }
-  , vel = { x = 0.0, y = -10.0 }
-  , acc = { x = 0.0, y = -10.0 }
-  , dim = { x = 10.0, y = 10.0 }
-  , color = Color.darkGrey
-  , labels = []
-  }
-
-type alias Vec2 =
-  { x : Float, y : Float }
-
-createTurtle : Float -> Entity
-createTurtle xPos =
-  Turtle {
-    pos = { x = xPos , y = 400.0 }
-  , vel = { x = 0.0, y = -10.0 }
-  , acc = { x = 0.0, y = -10.0 }
-  , dim = { x = 10.0, y = 10.0 }
-  , color = Color.darkGrey
-  , labels = []
-  }
-
-type alias Label =
-  { name : String, color : Color, percent : Float }
-
-createLabel : String -> Color -> Float -> Label
-createLabel name colour percent =
-  { name = name, color = colour, percent = percent }
-
-createLabeler : (String, Color) -> (String, Color) -> Entity
-createLabeler (fstName, fstColour) (sndName, sndColour) =
-  let
-    object = createObject
-  in
-    Labeler { object |
-      pos = { x = 0.0, y = 200.0 }
-    , dim = { x = 400.0, y = 10.0 }
-    , labels = [
-        createLabel fstName fstColour 0.3
-      , createLabel sndName sndColour 0.7
-      ]
-    }
-
-
-getPos : Entity -> Vec2
-getPos entity =
-  case entity of
-    Cursor object ->
-      object.pos
-    Turtle object ->
-      object.pos
-    Labeler object ->
-      object.pos
 
 -------------- Update methods
 
@@ -112,7 +104,7 @@ sourceTurtles app =
   in
     if List.length app.entities < 60 && shouldCreate == True then
       { app |
-        entities = createTurtle xPos :: app.entities
+        entities = createTurtle (xPos, 400) :: app.entities
       , seed = newSeed0
       }
     else
@@ -125,14 +117,14 @@ borderCollisionDetect input app =
   let
     withinBounds entity =
       case entity of
-        Cursor _ ->
+        CursorType _ ->
           True
-        Turtle _ ->
-          (getPos entity).y > -400.0
-          && (getPos entity).x > -500.0
-          && (getPos entity).x < 500.0
-        Labeler _ ->
+        LabelerType _ ->
           True
+        TurtleType data ->
+          Vec.y data.space.pos > -400.0
+          && Vec.x data.space.pos > -500.0
+          && Vec.x data.space.pos < 500.0
   in
     { app |
       entities = List.filter withinBounds app.entities
@@ -151,16 +143,18 @@ updateEntities input app =
 updateEntity : Input -> Entity -> Entity
 updateEntity input entity =
   case entity of
-    Cursor object ->
-      Cursor { object |
-        pos = { x = fst input.mouse, y = snd input.mouse }
+    CursorType data ->
+      CursorType { data |
+        space = Spatial.setPos input.mouse data.space
       }
-    Turtle object ->
-      Turtle { object |
-        pos = { x = object.pos.x, y = object.pos.y - 300 * input.delta }
+    TurtleType data ->
+      TurtleType { data |
+        space = Spatial.setPos
+          (Vec.x data.space.pos, (Vec.y data.space.pos) - 300 * input.delta)
+          data.space
       }
-    Labeler object ->
-      Labeler object
+    LabelerType data ->
+      LabelerType data
 
 ---------------- View methods
 
@@ -172,28 +166,29 @@ view (width, height) app =
 viewEntity : Entity -> Form
 viewEntity entity =
   case entity of
-    Cursor object ->
-      move (object.pos.x, object.pos.y) <| cursorView object.color
-    Turtle object ->
-      move (object.pos.x, object.pos.y) <| turtleView object.color
-    Labeler object ->
-      move (object.pos.x, object.pos.y) <| labelerView object.dim object.labels
+    CursorType data ->
+      move data.space.pos <| cursorView data.corp.color
+    TurtleType data ->
+      move data.space.pos <| turtleView data.corp.color
+    LabelerType data ->
+      move data.space.pos <| labelerView data.corp.dim data.labels
 
 cursorView : Color -> Form
-cursorView colour =
-  filled colour <| ngon 3 10
+cursorView color =
+  filled color <| ngon 3 10
 
 
 turtleView : Color -> Form
-turtleView colour =
-  filled colour <| circle 10
+turtleView color =
+  filled color <| circle 10
 
-labelerView : Vec2 -> List Label -> Form
+labelerView : Vec.Vec -> List Label -> Form
 labelerView dim labels =
-  let
-    labelLengths = List.map (\l -> (l, l.percent * dim.x)) labels
-  in
-    group (List.map (\(label, len) -> filled label.color <| rect len dim.y) labelLengths)
+  filled red <| circle 20
+  --let
+  --  labelLengths = List.map (\l -> (l, l.percent * dim.x)) labels
+  --in
+  --  group (List.map (\(label, len) -> filled label.color <| rect len dim.y) labelLengths)
 
 -------------- Input methods
 
