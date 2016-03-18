@@ -23,23 +23,27 @@ type Entity = CursorType Cursor
 type alias Cursor =
   { space: Spatial.Spatial
   , corp: Corporeal.Corporeal
+  , label: Label
   }
 
 initCursor =
   CursorType {
     space = Spatial.initSpatial
   , corp = Corporeal.initCorporeal
+  , label = { name = "", color = Color.black }
   }
 
 type alias Turtle =
   { space: Spatial.Spatial
   , corp: Corporeal.Corporeal
+  , label: Label
   }
 
 initTurtle =
   TurtleType {
     space = Spatial.createSpatial (0, 400)
   , corp = Corporeal.initCorporeal
+  , label = { name = "", color = Color.black }
   }
 
 createTurtle : Vec.Vec -> Entity
@@ -47,6 +51,7 @@ createTurtle pos =
   TurtleType {
     space = Spatial.createSpatial pos
   , corp = Corporeal.initCorporeal
+  , label = { name = "", color = Color.black }
   }
 
 type alias Label =
@@ -61,15 +66,15 @@ createLabel name colour =
 type alias Labeler =
   { space: Spatial.Spatial
   , corp: Corporeal.Corporeal
-  , labels: List Label
+  , label: Label
   }
 
 initLabeler : Entity
 initLabeler =
   LabelerType {
     space = Spatial.createSpatial (0, 200)
-  , corp = Corporeal.initCorporeal
-  , labels = [createLabel "Cancer" Color.red]
+  , corp = Corporeal.createCorporeal (300, 20) Color.blue
+  , label = createLabel "Cancer" Color.red
   }
 
 type alias App =
@@ -130,9 +135,83 @@ borderCollisionDetect input app =
       entities = List.filter withinBounds app.entities
     }
 
+labelerEntities : List Entity -> List Entity
+labelerEntities entities =
+  let
+    isLabeler entity =
+      case entity of
+        LabelerType data ->
+          True
+        _ ->
+          False
+  in
+    List.filter isLabeler entities
+
 collisionDetect : App -> App
 collisionDetect app =
-  app
+  { app |
+    entities = List.map (collideEntity <| labelerEntities app.entities) app.entities
+  }
+
+extractSpatial : Entity -> Spatial.Spatial
+extractSpatial entity =
+  case entity of
+    CursorType data ->
+      data.space
+    TurtleType data ->
+      data.space
+    LabelerType data ->
+      data.space
+
+extractCorporeal : Entity -> Corporeal.Corporeal
+extractCorporeal entity =
+  case entity of
+    CursorType data ->
+      data.corp
+    TurtleType data ->
+      data.corp
+    LabelerType data ->
+      data.corp
+
+inside : Entity -> Entity -> Bool
+inside expectedEntity testedEntity =
+  let
+    testedPos = (extractSpatial testedEntity).pos
+    expectedPos = (extractSpatial expectedEntity).pos
+    testedDim = (extractCorporeal testedEntity).dim
+    expectedDim = (extractCorporeal expectedEntity).dim
+  in
+    if (Vec.y testedPos > (Vec.y expectedPos - Vec.y expectedDim / 2)
+      && Vec.y testedPos < (Vec.y expectedPos + Vec.y expectedDim / 2)
+      && Vec.x testedPos > (Vec.x expectedPos - Vec.x expectedDim / 2)
+      && Vec.x testedPos < (Vec.x expectedPos + Vec.x expectedDim / 2)) then
+      True
+    else
+      False
+
+collideWithEffect : (Turtle -> Turtle) -> Entity -> Entity -> Entity
+collideWithEffect effectCallback expectedEntity testedEntity =
+  if (inside expectedEntity testedEntity) then
+    case testedEntity of
+      CursorType data ->
+        CursorType <| effectCallback data
+      TurtleType data ->
+        TurtleType <| effectCallback data
+      LabelerType data ->
+        LabelerType <| effectCallback data
+  else
+    testedEntity
+
+
+collideEntity : List Entity -> Entity -> Entity
+collideEntity entities entityAcc =
+  let
+    compareEntity entityAcc entity =
+      collideWithEffect (\data ->
+        { data | corp = Corporeal.setColor Color.green data.corp }
+      ) entityAcc entity
+  in
+    List.foldl compareEntity entityAcc entities
 
 updateEntities : Input -> App -> App
 updateEntities input app =
@@ -171,7 +250,7 @@ viewEntity entity =
     TurtleType data ->
       move data.space.pos <| turtleView data.corp.color
     LabelerType data ->
-      move data.space.pos <| labelerView data.corp.dim data.labels
+      move data.space.pos <| labelerView data.corp.dim data.label
 
 cursorView : Color -> Form
 cursorView color =
@@ -182,9 +261,9 @@ turtleView : Color -> Form
 turtleView color =
   filled color <| circle 10
 
-labelerView : Vec.Vec -> List Label -> Form
-labelerView dim labels =
-  filled red <| circle 20
+labelerView : Vec.Vec -> Label -> Form
+labelerView dim label =
+  filled label.color <| (uncurry rect) dim
   --let
   --  labelLengths = List.map (\l -> (l, l.percent * dim.x)) labels
   --in

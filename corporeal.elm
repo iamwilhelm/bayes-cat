@@ -16,10 +16,17 @@ initCorporeal = {
   , color = Color.darkGray
   }
 
-setColor : Corporeal -> Color -> Corporeal
-setColor corporeal newColr =
+createCorporeal : Vec -> Color -> Corporeal
+createCorporeal dim color = {
+    dim = dim
+  , radius = fst dim
+  , color = color
+  }
+
+setColor : Color -> Corporeal -> Corporeal
+setColor newColr corporeal =
   { corporeal | color = newColr }
 
-setDim : Corporeal -> Float -> Float -> Corporeal
-setDim corporeal w h =
+setDim : Float -> Float -> Corporeal -> Corporeal
+setDim w h corporeal =
   { corporeal | dim = (w, h) }
