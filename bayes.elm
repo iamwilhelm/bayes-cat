@@ -13,6 +13,8 @@ import Spatial
 import Corporeal
 import Vec
 
+import Debug
+
 
 -------------- Model methods
 
@@ -96,20 +98,20 @@ initApp = {
 
 update : Input -> App -> App
 update input app =
-  sourceTurtles app
+  sourceTurtles input app
     |> borderCollisionDetect input
     |> collisionDetect
     |> updateEntities input
 
-sourceTurtles : App -> App
-sourceTurtles app =
+sourceTurtles : Input -> App -> App
+sourceTurtles input app =
   let
     (shouldCreate, newSeed1) = Random.generate Random.bool app.seed
     (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
   in
     if List.length app.entities < 60 && shouldCreate == True then
       { app |
-        entities = createTurtle (xPos, 400) :: app.entities
+        entities = createTurtle (xPos, 300) :: app.entities
       , seed = newSeed0
       }
     else
@@ -127,9 +129,10 @@ borderCollisionDetect input app =
         LabelerType _ ->
           True
         TurtleType data ->
-          Vec.y data.space.pos > -400.0
-          && Vec.x data.space.pos > -500.0
-          && Vec.x data.space.pos < 500.0
+          Vec.x data.space.pos > -(toFloat <| fst input.window) / 2
+          && Vec.x data.space.pos < (toFloat <| fst input.window) / 2
+          && Vec.y data.space.pos > -(toFloat <| snd input.window) / 2
+          && Vec.y data.space.pos < (toFloat <| snd input.window) / 2
   in
     { app |
       entities = List.filter withinBounds app.entities
@@ -272,7 +275,8 @@ labelerView dim label =
 -------------- Input methods
 
 type alias Input =
-  { mouse : (Float, Float)
+  { window: (Int, Int)
+  , mouse : (Float, Float)
   , delta: Time
   }
 
@@ -287,7 +291,8 @@ screenToWorld (width, height) (x, y) =
 input : Signal Input
 input =
   Signal.sampleOn delta <|
-    Signal.map2 Input
+    Signal.map3 Input
+      (Window.dimensions)
       (Signal.map2 screenToWorld Window.dimensions Mouse.position)
       delta
 
