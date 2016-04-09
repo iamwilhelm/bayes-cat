@@ -86,11 +86,7 @@ type alias App =
 
 initApp : App
 initApp = {
-    entities = [
-      initCursor
-    , initTurtle
-    , initLabeler
-    ]
+    entities = [ initCursor , initLabeler ]
   , seed = Random.initialSeed 0
   }
 
