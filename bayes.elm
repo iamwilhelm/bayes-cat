@@ -35,13 +35,6 @@ initCursor =
   , label = { name = "", color = Color.black }
   }
 
-initTurtle =
-  Turtle {
-    space = Spatial.createSpatial (0, 400)
-  , corp = Corporeal.initCorporeal
-  , label = { name = "", color = Color.black }
-  }
-
 createTurtle : Vec.Vec -> Entity
 createTurtle pos =
   Turtle {
