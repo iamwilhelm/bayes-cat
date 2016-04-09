@@ -18,31 +18,25 @@ import Debug
 
 -------------- Model methods
 
-type Entity = CursorType Cursor
-  | TurtleType Turtle
-  | LabelerType Labeler
+type Entity = Cursor EntityData
+  | Turtle EntityData
+  | Labeler EntityData
 
-type alias Cursor =
+type alias EntityData =
   { space: Spatial.Spatial
   , corp: Corporeal.Corporeal
   , label: Label
   }
 
 initCursor =
-  CursorType {
+  Cursor {
     space = Spatial.initSpatial
   , corp = Corporeal.initCorporeal
   , label = { name = "", color = Color.black }
   }
 
-type alias Turtle =
-  { space: Spatial.Spatial
-  , corp: Corporeal.Corporeal
-  , label: Label
-  }
-
 initTurtle =
-  TurtleType {
+  Turtle {
     space = Spatial.createSpatial (0, 400)
   , corp = Corporeal.initCorporeal
   , label = { name = "", color = Color.black }
@@ -50,7 +44,7 @@ initTurtle =
 
 createTurtle : Vec.Vec -> Entity
 createTurtle pos =
-  TurtleType {
+  Turtle {
     space = Spatial.createSpatial pos
   , corp = Corporeal.initCorporeal
   , label = { name = "", color = Color.black }
@@ -65,15 +59,10 @@ createLabel : String -> Color -> Label
 createLabel name colour =
   { name = name, color = colour }
 
-type alias Labeler =
-  { space: Spatial.Spatial
-  , corp: Corporeal.Corporeal
-  , label: Label
-  }
 
 initLabeler : Entity
 initLabeler =
-  LabelerType {
+  Labeler {
     space = Spatial.createSpatial (0, 200)
   , corp = Corporeal.createCorporeal (300, 20) Color.blue
   , label = createLabel "Cancer" Color.red
@@ -117,11 +106,11 @@ borderCollisionDetect input app =
   let
     withinBounds entity =
       case entity of
-        CursorType _ ->
+        Cursor _ ->
           True
-        LabelerType _ ->
+        Labeler _ ->
           True
-        TurtleType data ->
+        Turtle data ->
           Vec.x data.space.pos > -(toFloat <| fst input.window) / 2
           && Vec.x data.space.pos < (toFloat <| fst input.window) / 2
           && Vec.y data.space.pos > -(toFloat <| snd input.window) / 2
@@ -136,7 +125,7 @@ labelerEntities entities =
   let
     isLabeler entity =
       case entity of
-        LabelerType data ->
+        Labeler data ->
           True
         _ ->
           False
@@ -152,21 +141,21 @@ collisionDetect app =
 extractSpatial : Entity -> Spatial.Spatial
 extractSpatial entity =
   case entity of
-    CursorType data ->
+    Cursor data ->
       data.space
-    TurtleType data ->
+    Turtle data ->
       data.space
-    LabelerType data ->
+    Labeler data ->
       data.space
 
 extractCorporeal : Entity -> Corporeal.Corporeal
 extractCorporeal entity =
   case entity of
-    CursorType data ->
+    Cursor data ->
       data.corp
-    TurtleType data ->
+    Turtle data ->
       data.corp
-    LabelerType data ->
+    Labeler data ->
       data.corp
 
 inside : Entity -> Entity -> Bool
@@ -185,16 +174,13 @@ inside expectedEntity testedEntity =
     else
       False
 
-collideWithEffect : (Turtle -> Turtle) -> Entity -> Entity -> Entity
+collideWithEffect : (EntityData -> EntityData) -> Entity -> Entity -> Entity
 collideWithEffect effectCallback expectedEntity testedEntity =
   if (inside expectedEntity testedEntity) then
     case testedEntity of
-      CursorType data ->
-        CursorType <| effectCallback data
-      TurtleType data ->
-        TurtleType <| effectCallback data
-      LabelerType data ->
-        LabelerType <| effectCallback data
+      Cursor data -> Cursor <| effectCallback data
+      Turtle data -> Turtle <| effectCallback data
+      Labeler data -> Labeler <| effectCallback data
   else
     testedEntity
 
@@ -218,18 +204,18 @@ updateEntities input app =
 updateEntity : Input -> Entity -> Entity
 updateEntity input entity =
   case entity of
-    CursorType data ->
-      CursorType { data |
+    Cursor data ->
+      Cursor { data |
         space = Spatial.setPos input.mouse data.space
       }
-    TurtleType data ->
-      TurtleType { data |
+    Turtle data ->
+      Turtle { data |
         space = Spatial.setPos
           (Vec.x data.space.pos, (Vec.y data.space.pos) - 300 * input.delta)
           data.space
       }
-    LabelerType data ->
-      LabelerType data
+    Labeler data ->
+      Labeler data
 
 ---------------- View methods
 
@@ -241,11 +227,11 @@ view (width, height) app =
 viewEntity : Entity -> Form
 viewEntity entity =
   case entity of
-    CursorType data ->
+    Cursor data ->
       move data.space.pos <| cursorView data.corp.color
-    TurtleType data ->
+    Turtle data ->
       move data.space.pos <| turtleView data.corp.color
-    LabelerType data ->
+    Labeler data ->
       move data.space.pos <| labelerView data.corp.dim data.label
 
 cursorView : Color -> Form
