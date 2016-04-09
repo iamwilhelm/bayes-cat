@@ -104,16 +104,13 @@ sourceTurtles input app =
   let
     (shouldCreate, newSeed1) = Random.generate Random.bool app.seed
     (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
+    updatedEntities =
+      if List.length app.entities < 60 && shouldCreate == True then
+        createTurtle (xPos, 300) :: app.entities
+      else
+        app.entities
   in
-    if List.length app.entities < 60 && shouldCreate == True then
-      { app |
-        entities = createTurtle (xPos, 300) :: app.entities
-      , seed = newSeed0
-      }
-    else
-      { app |
-        seed = newSeed0
-      }
+    { app | entities = updatedEntities , seed = newSeed0 }
 
 borderCollisionDetect : Input -> App -> App
 borderCollisionDetect input app =
