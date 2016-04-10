@@ -18,47 +18,66 @@ import Debug
 
 -------------- Model methods
 
-type Entity = Cursor EntityData
-  | Turtle EntityData
-  | Labeler EntityData
+type Role = Cursor | Turtle | Labeler
 
-type alias EntityData =
+type alias Interaction = (Role, Role)
+
+type alias Control = Input -> Spatial.Spatial -> Spatial.Spatial
+
+type alias CorporealView = Corporeal.Corporeal -> Form
+
+type alias Entity =
   { space: Spatial.Spatial
   , corp: Corporeal.Corporeal
+  , control: Control
+  , view: CorporealView
+  , interactions: List Interaction
   , label: Label
   }
 
-initCursor =
-  Cursor {
-    space = Spatial.initSpatial
-  , corp = Corporeal.initCorporeal
-  , label = { name = "", color = Color.black }
-  }
-
-createTurtle : Vec.Vec -> Entity
-createTurtle pos =
-  Turtle {
-    space = Spatial.createSpatial pos
-  , corp = Corporeal.initCorporeal
-  , label = { name = "", color = Color.black }
-  }
-
-type alias Label =
-  { name : String
+type alias Label = {
+    name : String
   , color : Color
   }
 
 createLabel : String -> Color -> Label
-createLabel name colour =
-  { name = name, color = colour }
+createLabel name colour = {
+    name = name
+  , color = colour
+  }
+
+initCursor : Entity
+initCursor = {
+    space = Spatial.initSpatial
+  , corp = Corporeal.initCorporeal
+  , control = \input space -> Spatial.setPos input.mouse space
+  , view = \corp -> filled corp.color <| ngon 3 10
+  , interactions = []
+  , label = { name = "", color = Color.black }
+  }
+
+createTurtle : Vec.Vec -> Entity
+createTurtle pos = {
+    space = Spatial.createSpatial pos
+  , corp = Corporeal.initCorporeal
+  , control = \input space ->
+      Spatial.setPos (Vec.x space.pos, (Vec.y space.pos) - 300 * input.delta) space
+  , view = \corp ->
+      filled corp.color <| circle 10
+  , interactions = []
+  , label = { name = "", color = Color.black }
+  }
 
 
 initLabeler : Entity
-initLabeler =
-  Labeler {
+initLabeler = {
     space = Spatial.createSpatial (0, 200)
-  , corp = Corporeal.createCorporeal (300, 20) Color.blue
-  , label = createLabel "Cancer" Color.red
+  , corp = Corporeal.createCorporeal (300, 20) Color.red
+  , control = \input space -> space
+  , view = \corp ->
+      filled corp.color <| (uncurry rect) corp.dim
+  , interactions = []
+  , label = createLabel "Cancer" Color.black
   }
 
 type alias App =
@@ -68,7 +87,7 @@ type alias App =
 
 initApp : App
 initApp = {
-    entities = [ initCursor , initLabeler ]
+    entities = [initCursor, initLabeler]
   , seed = Random.initialSeed 0
   }
 
@@ -97,67 +116,24 @@ sourceTurtles input app =
 borderCollisionDetect : Input -> App -> App
 borderCollisionDetect input app =
   let
+    -- NOTE refactor. very similary to inside()
     withinBounds entity =
-      case entity of
-        Cursor _ ->
-          True
-        Labeler _ ->
-          True
-        Turtle data ->
-          Vec.x data.space.pos > -(toFloat <| fst input.window) / 2
-          && Vec.x data.space.pos < (toFloat <| fst input.window) / 2
-          && Vec.y data.space.pos > -(toFloat <| snd input.window) / 2
-          && Vec.y data.space.pos < (toFloat <| snd input.window) / 2
+      Vec.x entity.space.pos > -(toFloat <| fst input.window) / 2
+      && Vec.x entity.space.pos < (toFloat <| fst input.window) / 2
+      && Vec.y entity.space.pos > -(toFloat <| snd input.window) / 2
+      && Vec.y entity.space.pos < (toFloat <| snd input.window) / 2
   in
     { app |
       entities = List.filter withinBounds app.entities
     }
 
-labelerEntities : List Entity -> List Entity
-labelerEntities entities =
-  let
-    isLabeler entity =
-      case entity of
-        Labeler data ->
-          True
-        _ ->
-          False
-  in
-    List.filter isLabeler entities
-
-collisionDetect : App -> App
-collisionDetect app =
-  { app |
-    entities = List.map (collideEntity <| labelerEntities app.entities) app.entities
-  }
-
-extractSpatial : Entity -> Spatial.Spatial
-extractSpatial entity =
-  case entity of
-    Cursor data ->
-      data.space
-    Turtle data ->
-      data.space
-    Labeler data ->
-      data.space
-
-extractCorporeal : Entity -> Corporeal.Corporeal
-extractCorporeal entity =
-  case entity of
-    Cursor data ->
-      data.corp
-    Turtle data ->
-      data.corp
-    Labeler data ->
-      data.corp
-
 inside : Entity -> Entity -> Bool
 inside expectedEntity testedEntity =
   let
-    testedPos = (extractSpatial testedEntity).pos
-    expectedPos = (extractSpatial expectedEntity).pos
-    testedDim = (extractCorporeal testedEntity).dim
-    expectedDim = (extractCorporeal expectedEntity).dim
+    testedPos = testedEntity.space.pos
+    expectedPos = expectedEntity.space.pos
+    testedDim = testedEntity.corp.dim
+    expectedDim = expectedEntity.corp.dim
   in
     if (Vec.y testedPos > (Vec.y expectedPos - Vec.y expectedDim / 2)
       && Vec.y testedPos < (Vec.y expectedPos + Vec.y expectedDim / 2)
@@ -167,26 +143,34 @@ inside expectedEntity testedEntity =
     else
       False
 
-collideWithEffect : (EntityData -> EntityData) -> Entity -> Entity -> Entity
-collideWithEffect effectCallback expectedEntity testedEntity =
-  if (inside expectedEntity testedEntity) then
-    case testedEntity of
-      Cursor data -> Cursor <| effectCallback data
-      Turtle data -> Turtle <| effectCallback data
-      Labeler data -> Labeler <| effectCallback data
+collide : Entity -> Entity -> Entity
+collide other self =
+  if inside self other then
+    -- run through all interactions of self and update self
+    -- run through all interactions of other and update other
+    self
   else
-    testedEntity
+    self
+
+-- interactionCallback : other -> target -> target
+pairwiseUpdate : (Entity -> Entity -> Entity) -> List Entity -> List Entity
+pairwiseUpdate interactionCallback entities =
+  if List.length entities <= 1 then
+    entities
+  else
+    List.indexedMap (\index entity ->
+      if index == 0 then
+        entity
+      else
+        List.foldl interactionCallback entity
+        <| List.drop (index + 1) entities
+    ) entities
 
 
-collideEntity : List Entity -> Entity -> Entity
-collideEntity entities entityAcc =
-  let
-    compareEntity entityAcc entity =
-      collideWithEffect (\data ->
-        { data | corp = Corporeal.setColor Color.green data.corp }
-      ) entityAcc entity
-  in
-    List.foldl compareEntity entityAcc entities
+collisionDetect : App -> App
+collisionDetect app =
+  { app | entities = pairwiseUpdate collide app.entities }
+
 
 updateEntities : Input -> App -> App
 updateEntities input app =
@@ -196,19 +180,9 @@ updateEntities input app =
 
 updateEntity : Input -> Entity -> Entity
 updateEntity input entity =
-  case entity of
-    Cursor data ->
-      Cursor { data |
-        space = Spatial.setPos input.mouse data.space
-      }
-    Turtle data ->
-      Turtle { data |
-        space = Spatial.setPos
-          (Vec.x data.space.pos, (Vec.y data.space.pos) - 300 * input.delta)
-          data.space
-      }
-    Labeler data ->
-      Labeler data
+  { entity |
+    space = entity.control input entity.space
+  }
 
 ---------------- View methods
 
@@ -219,30 +193,7 @@ view (width, height) app =
 
 viewEntity : Entity -> Form
 viewEntity entity =
-  case entity of
-    Cursor data ->
-      move data.space.pos <| cursorView data.corp.color
-    Turtle data ->
-      move data.space.pos <| turtleView data.corp.color
-    Labeler data ->
-      move data.space.pos <| labelerView data.corp.dim data.label
-
-cursorView : Color -> Form
-cursorView color =
-  filled color <| ngon 3 10
-
-
-turtleView : Color -> Form
-turtleView color =
-  filled color <| circle 10
-
-labelerView : Vec.Vec -> Label -> Form
-labelerView dim label =
-  filled label.color <| (uncurry rect) dim
-  --let
-  --  labelLengths = List.map (\l -> (l, l.percent * dim.x)) labels
-  --in
-  --  group (List.map (\(label, len) -> filled label.color <| rect len dim.y) labelLengths)
+  move entity.space.pos <| entity.view entity.corp
 
 -------------- Input methods
 
