@@ -59,15 +59,14 @@ initCursor = {
 createTurtle : Vec.Vec -> Entity
 createTurtle pos = {
     space = Spatial.createSpatial pos
-  , corp = Corporeal.initCorporeal
+  , corp = Corporeal.createCorporeal (20, 20) Color.gray
   , control = \input space ->
       Spatial.setPos (Vec.x space.pos, (Vec.y space.pos) - 300 * input.delta) space
   , view = \corp ->
-      filled corp.color <| circle 10
+      filled corp.color <| circle ((fst corp.dim) / 2)
   , interactions = []
-  , label = { name = "", color = Color.black }
+  , label = { name = "Turtle", color = Color.black }
   }
-
 
 initLabeler : Entity
 initLabeler = {
@@ -127,28 +126,46 @@ borderCollisionDetect input app =
       entities = List.filter withinBounds app.entities
     }
 
+-- FIXME bug. it doesn't calculate intersections of bounding boxes
 inside : Entity -> Entity -> Bool
-inside expectedEntity testedEntity =
+inside self other =
   let
-    testedPos = testedEntity.space.pos
-    expectedPos = expectedEntity.space.pos
-    testedDim = testedEntity.corp.dim
-    expectedDim = expectedEntity.corp.dim
+    selfPos = self.space.pos
+    otherPos = other.space.pos
+    selfDim = self.corp.dim
+    otherDim = other.corp.dim
   in
-    if (Vec.y testedPos > (Vec.y expectedPos - Vec.y expectedDim / 2)
-      && Vec.y testedPos < (Vec.y expectedPos + Vec.y expectedDim / 2)
-      && Vec.x testedPos > (Vec.x expectedPos - Vec.x expectedDim / 2)
-      && Vec.x testedPos < (Vec.x expectedPos + Vec.x expectedDim / 2)) then
+    if  (Vec.y otherPos > (Vec.y selfPos - Vec.y selfDim / 2)
+      && Vec.y otherPos < (Vec.y selfPos + Vec.y selfDim / 2)
+      && Vec.x otherPos > (Vec.x selfPos - Vec.x selfDim / 2)
+      && Vec.x otherPos < (Vec.x selfPos + Vec.x selfDim / 2)) then
       True
     else
       False
 
+routeInteraction : Interaction -> (Entity -> Entity -> Entity)
+routeInteraction interaction =
+  case interaction of
+    (Turtle, Labeler) -> iaTurtleLabeler
+    _ -> iaNoOp
+
+iaTurtleLabeler : Entity -> Entity -> Entity
+iaTurtleLabeler self other =
+  { self | corp = Corporeal.setColor Color.green self.corp }
+
+iaNoOp : Entity -> Entity -> Entity
+iaNoOp self other = self
+
 collide : Entity -> Entity -> Entity
 collide other self =
-  if inside self other then
+  if inside other self then
     -- run through all interactions of self and update self
+    if self.label.name == "Turtle" then
+      iaTurtleLabeler self other
+    else
+      self
+
     -- run through all interactions of other and update other
-    self
   else
     self
 
@@ -166,10 +183,17 @@ pairwiseUpdate interactionCallback entities =
         <| List.drop (index + 1) entities
     ) entities
 
+squaredUpdate : (Entity -> Entity -> Entity) -> List Entity -> List Entity
+squaredUpdate interactionCallback entities =
+  List.indexedMap (\index entity ->
+    List.foldl (\other self ->
+      interactionCallback other self
+    ) entity <| List.append (List.take index entities) (List.drop (index + 1) entities)
+  ) entities
 
 collisionDetect : App -> App
 collisionDetect app =
-  { app | entities = pairwiseUpdate collide app.entities }
+  { app | entities = squaredUpdate collide app.entities }
 
 
 updateEntities : Input -> App -> App
