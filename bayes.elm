@@ -64,7 +64,7 @@ createTurtle pos = {
       Spatial.setPos (Vec.x space.pos, (Vec.y space.pos) - 300 * input.delta) space
   , view = \corp ->
       filled corp.color <| circle ((fst corp.dim) / 2)
-  , interactions = []
+  , interactions = [(Turtle, Labeler)]
   , label = { name = "Turtle", color = Color.black }
   }
 
@@ -160,10 +160,9 @@ collide : Entity -> Entity -> Entity
 collide other self =
   if inside other self then
     -- run through all interactions of self and update self
-    if self.label.name == "Turtle" then
-      iaTurtleLabeler self other
-    else
-      self
+    List.foldl (\interaction entity ->
+      routeInteraction interaction entity other
+    ) self self.interactions
 
     -- run through all interactions of other and update other
   else
