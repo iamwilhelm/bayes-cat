@@ -61,7 +61,7 @@ createTurtle pos = {
     space = Spatial.createSpatial pos
   , corp = Corporeal.createCorporeal (20, 20) Color.gray
   , control = \input space ->
-      Spatial.setPos (Vec.x space.pos, (Vec.y space.pos) - 300 * input.delta) space
+      Spatial.setPos (Vec.x space.pos, (Vec.y space.pos) + (Vec.y space.vel) * input.delta) space
   , view = \corp ->
       filled corp.color <| circle ((fst corp.dim) / 2)
   , interactions = [(Turtle, Labeler)]
@@ -151,7 +151,10 @@ routeInteraction interaction =
 
 iaTurtleLabeler : Entity -> Entity -> Entity
 iaTurtleLabeler self other =
-  { self | corp = Corporeal.setColor Color.green self.corp }
+  { self |
+    corp = Corporeal.setColor Color.green self.corp
+  , space = Spatial.setVel (0, -150) self.space
+  }
 
 iaNoOp : Entity -> Entity -> Entity
 iaNoOp self other = self
