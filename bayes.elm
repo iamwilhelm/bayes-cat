@@ -10,14 +10,10 @@ import List
 import Random
 
 import Entity exposing (..)
-import Vec
-
-import Spatial
-import Corporeal
-import Vec
-
-
+import Component
 import Collision
+import Vec
+
 import Input exposing (..)
 
 import Debug
@@ -32,9 +28,9 @@ createLabel name colour = {
 
 initCursor : Entity
 initCursor = {
-    space = Spatial.initSpatial
-  , corp = Corporeal.initCorporeal
-  , control = \input space -> Spatial.setPos input.mouse space
+    space = Component.initSpatial
+  , corp = Component.initCorporeal
+  , control = \input space -> Component.setPos input.mouse space
   , view = \corp -> filled corp.color <| ngon 3 10
   , interactions = []
   , label = { name = "Cursor", color = Color.black }
@@ -42,14 +38,14 @@ initCursor = {
 
 createTurtle : Vec.Vec -> Entity
 createTurtle pos = {
-    space = Spatial.createSpatial pos
-  , corp = Corporeal.createCorporeal (20, 20) Color.gray
+    space = Component.createSpatial pos
+  , corp = Component.createCorporeal (20, 20) Color.gray
   , control = \input space ->
       let
         newX = Vec.x space.pos + Vec.x space.vel * input.delta
         newY = Vec.y space.pos + Vec.y space.vel * input.delta
       in
-        Spatial.setPos (newX, newY) space
+        Component.setPos (newX, newY) space
   , view = \corp ->
       filled corp.color <| circle ((fst corp.dim) / 2)
   , interactions = [(Turtle, Labeler), (Turtle, Turtle), (Turtle, Cursor)]
@@ -58,8 +54,8 @@ createTurtle pos = {
 
 initLabeler : Entity
 initLabeler = {
-    space = Spatial.createSpatial (0, 200)
-  , corp = Corporeal.createCorporeal (300, 20) Color.red
+    space = Component.createSpatial (0, 200)
+  , corp = Component.createCorporeal (300, 20) Color.red
   , control = \input space -> space
   , view = \corp ->
       filled corp.color <| (uncurry rect) corp.dim
@@ -117,8 +113,9 @@ borderCollisionDetect input app =
 
 collisionDetect : App -> App
 collisionDetect app =
-  { app | entities = Collision.squaredUpdate Collision.collide app.entities }
-
+  { app |
+    entities = Collision.squaredUpdate Collision.collide app.entities
+  }
 
 updateEntities : Input -> App -> App
 updateEntities input app =
