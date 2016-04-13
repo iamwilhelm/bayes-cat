@@ -22,11 +22,11 @@ initSpatial = {
   , heading = 0
   }
 
-createSpatial : Vec.Vec -> Spatial
-createSpatial pos = {
+createSpatial : Vec.Vec -> Vec.Vec -> Vec.Vec -> Spatial
+createSpatial pos vel acc = {
     pos = pos
-  , vel = (0, -300)
-  , acc = (0, 0)
+  , vel = vel
+  , acc = acc
   , heading = 0
   }
 
@@ -37,6 +37,10 @@ setPos newPos spatial =
 setVel : Vec.Vec -> Spatial -> Spatial
 setVel newVel spatial =
   { spatial | vel = newVel }
+
+setAcc : Vec.Vec -> Spatial -> Spatial
+setAcc newAcc spatial =
+  { spatial | acc = newAcc }
 
 --------- Corporeal Component
 

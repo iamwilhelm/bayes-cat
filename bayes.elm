@@ -12,7 +12,7 @@ import Random
 import Entity exposing (..)
 import Component
 import Collision
-import Vec
+import Vec exposing (..)
 
 import Input exposing (..)
 
@@ -38,16 +38,13 @@ initCursor = {
 
 createTurtle : Vec.Vec -> Entity
 createTurtle pos = {
-    space = Component.createSpatial pos
+    space = Component.createSpatial pos (0, -300) (0, 0)
   , corp = Component.createCorporeal (20, 20) Color.gray
   , control = \input space ->
-      let
-        newX = Vec.x space.pos + Vec.x space.vel * input.delta
-        newY = Vec.y space.pos + Vec.y space.vel * input.delta
-      in
-        Component.setPos (newX, newY) space
+      space
   , view = \corp ->
-      filled corp.color <| circle ((fst corp.dim) / 2)
+      filled corp.color-- <| circle ((fst corp.dim) / 2)
+      <| (uncurry rect) corp.dim
   , interactions = [
       (Turtle, Labeler)
     , (Turtle, Turtle)
@@ -58,7 +55,7 @@ createTurtle pos = {
 
 initLabeler : Entity
 initLabeler = {
-    space = Component.createSpatial (0, 200)
+    space = Component.createSpatial (0, 200) (0, 0) (0, 0)
   , corp = Component.createCorporeal (300, 20) Color.red
   , control = \input space -> space
   , view = \corp ->
@@ -124,13 +121,20 @@ collisionDetect app =
 updateEntities : Input -> App -> App
 updateEntities input app =
   { app |
-    entities = List.map (updateEntity input) app.entities
+    entities = List.map (simulatePhysics input << controlEntity input) app.entities
   }
 
-updateEntity : Input -> Entity -> Entity
-updateEntity input entity =
+controlEntity : Input -> Entity -> Entity
+controlEntity input entity =
   { entity |
     space = entity.control input entity.space
+  }
+
+simulatePhysics : Input -> Entity -> Entity
+simulatePhysics input entity =
+  { entity |
+    space = Component.setPos (entity.space.pos |+ entity.space.vel .* input.delta)
+      << Component.setVel (entity.space.vel |+ entity.space.acc .* input.delta) <| entity.space
   }
 
 ---------------- View methods
