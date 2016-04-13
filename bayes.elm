@@ -48,7 +48,11 @@ createTurtle pos = {
         Component.setPos (newX, newY) space
   , view = \corp ->
       filled corp.color <| circle ((fst corp.dim) / 2)
-  , interactions = [(Turtle, Labeler), (Turtle, Turtle), (Turtle, Cursor)]
+  , interactions = [
+      (Turtle, Labeler)
+    , (Turtle, Turtle)
+    , (Turtle, Cursor)
+    ]
   , label = { name = "Turtle", color = Color.black }
   }
 

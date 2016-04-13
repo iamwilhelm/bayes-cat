@@ -3,22 +3,31 @@ module Collision where
 import Entity exposing (..)
 import Vec
 
+type alias Range = (Float, Float)
+
+between : Range -> Range -> Bool
+between (minA, maxA) (minB, maxB) =
+  -- checks
+  if (minA < minB && minA < maxB) && (maxA < minB && maxA < maxB) then
+    False
+  else if (minA > minB && minA > maxB) && (maxA > minB && maxA > maxB) then
+    False
+  else
+    True
+
 inside : Entity -> Entity -> Bool
-inside self other =
+inside self othr =
   let
-    selfPos = self.space.pos
-    otherPos = other.space.pos
-    selfDim = self.corp.dim
-    otherDim = other.corp.dim
+    selfMin = Vec.sub self.space.pos <| Vec.divS self.corp.dim 2
+    selfMax = Vec.add self.space.pos <| Vec.divS self.corp.dim 2
+    othrMin = Vec.sub othr.space.pos <| Vec.divS othr.corp.dim 2
+    othrMax = Vec.add othr.space.pos <| Vec.divS othr.corp.dim 2
   in
-    if  (Vec.y otherPos > (Vec.y selfPos - Vec.y selfDim / 2)
-      && Vec.y otherPos < (Vec.y selfPos + Vec.y selfDim / 2)
-      && Vec.x otherPos > (Vec.x selfPos - Vec.x selfDim / 2)
-      && Vec.x otherPos < (Vec.x selfPos + Vec.x selfDim / 2)) then
+    if between (Vec.x selfMin, Vec.x selfMax) (Vec.x othrMin, Vec.x othrMax)
+      && between (Vec.y selfMin, Vec.y selfMax) (Vec.y othrMin, Vec.y othrMax) then
       True
     else
       False
-
 
 collide : Entity -> Entity -> Entity
 collide other self =

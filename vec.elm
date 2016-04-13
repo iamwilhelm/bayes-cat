@@ -23,5 +23,8 @@ dist (x, y) = sqrt <| x * x + y * y
 mulS : Vec -> Float -> Vec
 mulS (x, y) a = (x * a, y * a)
 
+divS : Vec -> Float -> Vec
+divS (x, y) a = (x / a, y / a)
+
 scale : Vec -> Vec -> Vec
 scale (sx, sy) (x, y) = (x * sx, y * sy)
