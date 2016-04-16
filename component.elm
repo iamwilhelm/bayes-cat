@@ -78,4 +78,4 @@ type alias Control = Input.Input -> Spatial -> Spatial
 
 ---------- CorporealView Component
 
-type alias CorporealView = Corporeal -> Form
+type alias View = Corporeal -> Form

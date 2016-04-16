@@ -1,26 +1,30 @@
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Color exposing (..)
-import Graphics.Collage exposing (..)
-import Graphics.Element exposing (..)
 import Window
 import Mouse
-import Time exposing (..)
+import Input exposing (Input)
+import Time exposing (Time)
+
+import Graphics.Collage exposing (..)
+import Graphics.Element exposing (..)
+import Color exposing (Color)
+import Text
+
+import Html exposing (..)
+import Html.Attributes exposing (..)
+
 import List
 import Random
 
-import Entity exposing (..)
+import Entity exposing (Entity)
 import Component
 import Collision
 import Vec exposing (..)
 
-import Input exposing (..)
 
 import Debug
 
 -------------- Model methods
 
-createLabel : String -> Color -> Label
+createLabel : String -> Color -> Entity.Label
 createLabel name colour = {
     name = name
   , color = colour
@@ -28,10 +32,10 @@ createLabel name colour = {
 
 initCursor : Entity
 initCursor = {
-    space = Component.initSpatial
-  , corp = Component.initCorporeal
+    space = Component.createSpatial (0, 0) (0, 0) (0, 0)
+  , corp = Component.createCorporeal (15, 15) Color.darkGray
   , control = \input space -> Component.setPos input.mouse space
-  , view = \corp -> filled corp.color <| ngon 3 10
+  , view = \corp -> filled corp.color <| ngon 3 (fst corp.dim)
   , interactions = []
   , label = { name = "Cursor", color = Color.black }
   }
@@ -39,30 +43,74 @@ initCursor = {
 createTurtle : Vec.Vec -> Entity
 createTurtle pos = {
     space = Component.createSpatial pos (0, -300) (0, 0)
-  , corp = Component.createCorporeal (20, 20) Color.gray
+  , corp = Component.createCorporeal (30, 30) Color.green
   , control = \input space ->
       space
   , view = \corp ->
-      filled corp.color-- <| circle ((fst corp.dim) / 2)
-      <| (uncurry rect) corp.dim
+      group [
+        filled corp.color <| circle ((fst corp.dim) / 2)
+      ]
   , interactions = [
-      (Turtle, Labeler)
-    , (Turtle, Turtle)
-    , (Turtle, Cursor)
+      (Entity.Turtle, Entity.Labeler)
+    , (Entity.Turtle, Entity.Turtle)
+    , (Entity.Turtle, Entity.Cursor)
     ]
   , label = { name = "Turtle", color = Color.black }
   }
 
-initLabeler : Entity
-initLabeler = {
-    space = Component.createSpatial (0, 200) (0, 0) (0, 0)
-  , corp = Component.createCorporeal (300, 20) Color.red
+createEgg : Vec -> Vec -> Entity
+createEgg pos vel = {
+    space = Component.createSpatial pos vel (0, 0)
+  , corp = Component.createCorporeal (35, 35) Color.gray
   , control = \input space -> space
   , view = \corp ->
-      filled corp.color <| (uncurry rect) corp.dim
-  , interactions = []
-  , label = createLabel "Labeler" Color.black
+      group [
+        filled corp.color <| circle ((fst corp.dim) / 2)
+      ]
+  , interactions = [
+    ]
+  , label = { name = "Egg", color = Color.black }
   }
+
+bombLabeler : Entity
+bombLabeler = {
+    space = Component.createSpatial (0, 250) (0, 0) (0, 0)
+  , corp = Component.createCorporeal (400, 20) Color.lightRed
+  , control = \input space -> space
+  , view = \corp ->
+      group [
+        filled corp.color <| (uncurry rect) corp.dim
+      ]
+  , interactions = [(Entity.Labeler, Entity.Turtle)]
+  , label = createLabel "Bomb" Color.black
+  }
+
+tickingLabeler : Entity
+tickingLabeler = {
+    space = Component.createSpatial (-400 / 2 + 300 / 2, 50) (0, 0) (0, 0)
+  , corp = Component.createCorporeal (300, 20) Color.lightPurple
+  , control = \input space -> space
+  , view = \corp ->
+      group [
+        filled corp.color <| (uncurry rect) corp.dim
+      ]
+  , interactions = [(Entity.Labeler, Entity.Turtle)]
+  , label = createLabel "Ticking" Color.black
+  }
+
+notTickingLabeler : Entity
+notTickingLabeler = {
+    space = Component.createSpatial (400 / 2 - 100 / 2, 50) (0, 0) (0, 0)
+  , corp = Component.createCorporeal (100, 20) Color.lightGreen
+  , control = \input space -> space
+  , view = \corp ->
+      group [
+        filled corp.color <| (uncurry rect) corp.dim
+      ]
+  , interactions = [(Entity.Labeler, Entity.Turtle)]
+  , label = createLabel "Not Ticking" Color.black
+  }
+
 
 type alias App =
   { entities: List Entity
@@ -71,7 +119,7 @@ type alias App =
 
 initApp : App
 initApp = {
-    entities = [initCursor, initLabeler]
+    entities = [initCursor]
   , seed = Random.initialSeed 0
   }
 
@@ -92,7 +140,7 @@ sourceTurtles input app =
     (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
     updatedEntities =
       if List.length app.entities < 60 && shouldCreate == True then
-        createTurtle (xPos, 300) :: app.entities
+        createEgg (xPos, 300) (0, -300) :: app.entities
       else
         app.entities
   in
@@ -109,13 +157,13 @@ borderCollisionDetect input app =
       && Vec.y entity.space.pos < (toFloat <| snd input.window) / 2
   in
     { app |
-      entities = List.filter withinBounds app.entities
+      entities = List.filter (withinBounds) app.entities
     }
 
 collisionDetect : App -> App
 collisionDetect app =
   { app |
-    entities = Collision.squaredUpdate Collision.collide app.entities
+    entities = Collision.squaredUpdate Collision.interact app.entities
   }
 
 updateEntities : Input -> App -> App
@@ -133,8 +181,10 @@ controlEntity input entity =
 simulatePhysics : Input -> Entity -> Entity
 simulatePhysics input entity =
   { entity |
-    space = Component.setPos (entity.space.pos |+ entity.space.vel .* input.delta)
-      << Component.setVel (entity.space.vel |+ entity.space.acc .* input.delta) <| entity.space
+    space =
+      Component.setVel (entity.space.vel |+ entity.space.acc .* input.delta)
+      >> Component.setPos (entity.space.pos |+ entity.space.vel .* input.delta)
+      <| entity.space
   }
 
 ---------------- View methods
@@ -151,7 +201,7 @@ viewEntity entity =
 -------------- Input methods
 
 delta : Signal Time
-delta = Signal.map inSeconds (fps 30)
+delta = Signal.map Time.inSeconds (Time.fps 30)
 
 screenToWorld : (Int, Int) -> (Int, Int) -> (Float, Float)
 screenToWorld (width, height) (x, y) =

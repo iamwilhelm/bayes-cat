@@ -48,3 +48,7 @@ infixr 7 ./
 
 scale : Vec -> Vec -> Vec
 scale (sx, sy) (x, y) = (x * sx, y * sy)
+
+neg : Vec -> Vec
+neg (x, y) =
+  (-x, -y)

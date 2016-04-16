@@ -1,17 +1,18 @@
 module Entity where
 
 import Graphics.Collage exposing (..)
-import Color exposing (..)
-import Component exposing (..)
+import Color exposing (Color)
+import Component exposing (Spatial, Corporeal, Control, View)
+import Vec exposing (..)
 
-type Role = Cursor | Turtle | Labeler
+type Role = Cursor | Turtle | Labeler | Egg
 type alias Interaction = (Role, Role)
 
 type alias Entity =
   { space: Spatial
   , corp: Corporeal
   , control: Control
-  , view: CorporealView
+  , view: View
   , interactions: List Interaction
   , label: Label
   }
@@ -29,16 +30,24 @@ route interaction =
     (Turtle, Labeler) -> iaTurtleLabeler
     (Turtle, Turtle) -> iaTurtleTurtle
     (Turtle, Cursor) -> iaTurtleCursor
+    (Labeler, Turtle) -> iaLabelerTurtle
     _ -> iaNoOp
 
 -- Application specific interactions
 
 iaTurtleLabeler : Entity -> Entity -> Entity
 iaTurtleLabeler self other =
-  if self.label.name == "Turtle" && other.label.name == "Labeler" then
+  if self.label.name == "Turtle" && other.label.name == "Bomb" then
     { self |
-      space = Component.setVel (0, -150) self.space
-    , corp = Component.setColor Color.green self.corp
+      corp = (Component.setColor Color.red) self.corp
+    }
+  else if self.label.name == "Turtle" && other.label.name == "Ticking" then
+    { self |
+      corp = (Component.setColor Color.orange) self.corp
+    }
+  else if self.label.name == "Turtle" && other.label.name == "Not Ticking" then
+    { self |
+      corp = (Component.setColor Color.yellow) self.corp
     }
   else
     self
@@ -46,10 +55,11 @@ iaTurtleLabeler self other =
 iaTurtleTurtle : Entity -> Entity -> Entity
 iaTurtleTurtle self other =
   if self.label.name == "Turtle" && other.label.name == "Turtle" then
-    { self |
-      space = Component.setVel (0, -100) self.space
-    , corp = Component.setColor Color.purple self.corp
-    }
+    self
+    --{ self |
+    --  space = Component.setVel (0, -100) self.space
+    --, corp = Component.setColor Color.purple self.corp
+    --}
   else
     self
 
@@ -60,6 +70,17 @@ iaTurtleCursor self other =
       space = Component.setVel (100, -50) self.space
     , corp = Component.setColor Color.red self.corp
     }
+  else
+    self
+
+iaLabelerTurtle : Entity -> Entity -> Entity
+iaLabelerTurtle self other =
+  if self.label.name == "Bomb" && other.label.name == "Turtle" then
+    self
+  else if self.label.name == "Ticking" && other.label.name == "Turtle" then
+    self
+  else if self.label.name == "Not Ticking" && other.label.name == "Turtle" then
+    self
   else
     self
 

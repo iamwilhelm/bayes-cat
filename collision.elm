@@ -1,6 +1,7 @@
 module Collision where
 
 import Entity exposing (..)
+import Component
 import Vec exposing (..)
 
 type alias Range = (Float, Float)
@@ -29,7 +30,13 @@ inside self othr =
       False
 
 collide : Entity -> Entity -> Entity
-collide other self =
+collide self other =
+  { self |
+    space = Component.setVel (Vec.neg self.space.vel) self.space
+  }
+
+interact : Entity -> Entity -> Entity
+interact other self =
   if inside self other then
     -- run through all interactions of self and update self
     List.foldl (\interaction entity ->
