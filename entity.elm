@@ -6,6 +6,7 @@ import Component exposing (Spatial, Corporeal, Control, View)
 import Vec exposing (..)
 
 type Role = Cursor | Turtle | Labeler | Egg
+
 type alias Interaction = (Role, Role)
 
 type alias Entity =
@@ -31,6 +32,8 @@ route interaction =
     (Turtle, Turtle) -> iaTurtleTurtle
     (Turtle, Cursor) -> iaTurtleCursor
     (Labeler, Turtle) -> iaLabelerTurtle
+    (Egg, Egg) -> iaEggEgg
+    (Egg, Cursor) -> iaEggCursor
     _ -> iaNoOp
 
 -- Application specific interactions
@@ -83,6 +86,25 @@ iaLabelerTurtle self other =
     self
   else
     self
+
+iaEggEgg : Entity -> Entity -> Entity
+iaEggEgg self other =
+  if self.label.name == "Egg" && other.label.name == "Egg" then
+    { self |
+      corp = Component.setColor Color.blue self.corp
+    }
+  else
+    self
+
+iaEggCursor : Entity -> Entity -> Entity
+iaEggCursor self other =
+  if self.label.name == "Egg" && self.label.name == "Cursor" then
+    { self |
+      space = Component.setVel (Vec.neg self.space.vel) self.space
+    }
+  else
+    self
+
 
 iaNoOp : Entity -> Entity -> Entity
 iaNoOp self other = self
