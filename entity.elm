@@ -4,6 +4,10 @@ import Graphics.Collage exposing (..)
 import Color exposing (Color)
 import Component exposing (Spatial, Corporeal, Control, View)
 import Vec exposing (..)
+import Action exposing (Action, EntityAction)
+import Signal
+
+import Debug
 
 type Role = Cursor | Turtle | Labeler | Egg
 
@@ -25,15 +29,15 @@ type alias Label = {
 
 -------------- Interactions
 
-route : Interaction -> (Entity -> Entity -> Entity)
-route interaction =
+route : Signal.Address Action.Action -> Interaction -> (Entity -> Entity -> Entity)
+route address interaction =
   case interaction of
     (Turtle, Labeler) -> iaTurtleLabeler
     (Turtle, Turtle) -> iaTurtleTurtle
     (Turtle, Cursor) -> iaTurtleCursor
     (Labeler, Turtle) -> iaLabelerTurtle
     (Egg, Egg) -> iaEggEgg
-    (Egg, Cursor) -> iaEggCursor
+    (Egg, Cursor) -> iaEggCursor address
     _ -> iaNoOp
 
 -- Application specific interactions
@@ -96,12 +100,15 @@ iaEggEgg self other =
   else
     self
 
-iaEggCursor : Entity -> Entity -> Entity
-iaEggCursor self other =
-  if self.label.name == "Egg" && self.label.name == "Cursor" then
-    { self |
-      space = Component.setVel (Vec.neg self.space.vel) self.space
-    }
+iaEggCursor : Signal.Address Action.Action -> Entity -> Entity -> Entity
+iaEggCursor address self other =
+  if self.label.name == "Egg" && other.label.name == "Cursor" then
+    let
+      task = Signal.send address (Action.Entity Action.Open)
+      da = Debug.log "address: " address
+      dm = Debug.log "task: " task
+    in
+      self
   else
     self
 

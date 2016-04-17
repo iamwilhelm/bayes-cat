@@ -18,6 +18,7 @@ import Entity exposing (Entity)
 import Component
 import Collision
 import Vec exposing (..)
+import Action exposing (Action, EntityAction)
 
 
 import Debug
@@ -121,19 +122,46 @@ type alias App =
 
 initApp : App
 initApp = {
-    entities = [initCursor]
+    entities = [
+      createEgg (0, 300) (0, 0)
+    , initCursor
+    ]
   , seed = Random.initialSeed 0
   }
 
 
 -------------- Update methods
 
-update : Input -> App -> App
-update input app =
-  sourceTurtles input app
-    |> borderCollisionDetect input
-    |> collisionDetect
-    |> updateEntities input
+update : Signal.Address Action -> (Input, Action) -> App -> App
+update address (input, action) app =
+  let
+    _ = Debug.log "update action: " action
+  in
+    case action of
+      Action.NoOp ->
+        --sourceTurtles input app
+        borderCollisionDetect input app
+          |> collisionDetect address
+          |> updateApp input
+      Action.Entity entityAction ->
+        { app |
+          entities = updateEntities address (input, entityAction) app.entities
+        }
+
+updateEntities : Signal.Address Action -> (Input, EntityAction) -> List Entity -> List Entity
+updateEntities address (input, action) entities =
+  case action of
+    Action.Open ->
+      let
+        _ = Debug.log "opened!" 3
+      in
+        List.map (\entity ->
+            { entity |
+              corp = Component.setColor Color.orange entity.corp
+            }
+          ) entities
+    _ ->
+      entities
 
 sourceTurtles : Input -> App -> App
 sourceTurtles input app =
@@ -162,14 +190,14 @@ borderCollisionDetect input app =
       entities = List.filter (withinBounds) app.entities
     }
 
-collisionDetect : App -> App
-collisionDetect app =
+collisionDetect : Signal.Address Action -> App -> App
+collisionDetect address app =
   { app |
-    entities = Collision.squaredUpdate Collision.interact app.entities
+    entities = Collision.squaredUpdate (Collision.interact address) app.entities
   }
 
-updateEntities : Input -> App -> App
-updateEntities input app =
+updateApp : Input -> App -> App
+updateApp input app =
   { app |
     entities = List.map (simulatePhysics input << controlEntity input) app.entities
   }
@@ -191,6 +219,7 @@ simulatePhysics input entity =
 
 ---------------- View methods
 
+-- FIXME shouldn't have to pass in window dims. try using input instead
 view : (Int, Int) -> App -> Element
 view (width, height) app =
   collage width height
@@ -210,8 +239,8 @@ screenToWorld (width, height) (x, y) =
   ((toFloat x) - (toFloat width) / 2,
   -(toFloat y) + (toFloat height) / 2)
 
-input : Signal Input
-input =
+inputSignal : Signal Input
+inputSignal =
   Signal.sampleOn delta <|
     Signal.map3 Input
       (Window.dimensions)
@@ -220,9 +249,17 @@ input =
 
 ------------- Main functions
 
+inbox : Signal.Mailbox Action.Action
+inbox =
+  Signal.mailbox Action.NoOp
+
+actionInputSignal : Signal (Input, Action.Action)
+actionInputSignal =
+  Signal.map2 (\input action -> (input, action)) inputSignal inbox.signal
+
 appState : Signal App
 appState =
-  Signal.foldp update initApp input
+  Signal.foldp (update inbox.address) initApp actionInputSignal
 
 main : Signal Element
 main =
