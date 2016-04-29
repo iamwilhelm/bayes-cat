@@ -125,38 +125,35 @@ initApp = {
 
 -------------- Update methods
 
+-- e -> acc -> acc
 update : Signal.Address (List Action) -> (Input, List Action) -> (App, List (Effects Action)) -> (App, List (Effects Action))
 update inboxAddress (input, actions) (app, _) =
   let
     action = Maybe.withDefault Action.NoOp (List.head actions)
-    _ = Debug.log "update action: " action
   in
     case action of
       Action.NoOp ->
-        --sourceTurtles input app
+        -- sourceTurtles input app
         -- borderCollisionDetect input app
-          collisionDetect inboxAddress (app, [Effects.none])
-          |> updateApp input
+        collisionDetect inboxAddress (app, []) |> updateApp input
       Action.Entity entityAction ->
-        ({ app |
-          entities = updateEntities inboxAddress (input, entityAction) app.entities
-        }
-        , [Effects.none])
+        let
+          newEntities = updateEntities inboxAddress (input, entityAction) app.entities
+        in
+          collisionDetect inboxAddress ({ app | entities = newEntities } , [])
+          |> updateApp input
 
 updateEntities : Signal.Address (List Action) -> (Input, EntityAction) -> List Entity -> List Entity
-updateEntities address (input, action) entities =
+updateEntities inboxAddress (input, action) entities =
   case action of
     Action.Open ->
-      let
-        _ = Debug.log "opened!" 3
-      in
-        List.map (\entity ->
-            { entity |
-              corp = Component.setColor Color.orange entity.corp
-            }
-          ) entities
-    _ ->
-      entities
+      List.map (\entity ->
+          { entity | corp = Component.setColor Color.blue entity.corp }
+        ) entities
+    Action.Explode ->
+      List.map (\entity ->
+          { entity | corp = Component.setColor Color.orange entity.corp }
+        ) entities
 
 sourceTurtles : Input -> App -> (App, Effects Action)
 sourceTurtles input app =
@@ -196,10 +193,10 @@ collisionDetect inboxAddress (app, effects) =
 
 updateApp : Input -> (App, List (Effects Action)) -> (App, List (Effects Action))
 updateApp input (app, effects) =
-  ({ app |
-      entities = List.map (controlEntity input >> simulateEntity input) app.entities
-    }
-  , effects)
+  let
+    newEntities = List.map (controlEntity input >> simulateEntity input) app.entities
+  in
+    ({ app | entities = newEntities } , effects)
 
 controlEntity : Input -> Entity -> Entity
 controlEntity input entity =
@@ -247,7 +244,7 @@ inputSignal =
 
 actionInbox : Signal.Mailbox (List Action)
 actionInbox =
-  Signal.mailbox [Action.NoOp]
+  Signal.mailbox []
 
 actionInputSignal : Signal (Input, List Action)
 actionInputSignal =
@@ -255,7 +252,7 @@ actionInputSignal =
 
 stateChangeSignal : Signal (App, List (Effects Action))
 stateChangeSignal =
-  Signal.foldp (update actionInbox.address) (initApp, [Effects.none]) actionInputSignal
+  Signal.foldp (update actionInbox.address) (initApp, []) actionInputSignal
 
 appSignal : Signal App
 appSignal =
@@ -275,7 +272,7 @@ port tasks : Signal (Task Effects.Never ())
 port tasks =
   Signal.map (\effects ->
     let
-      _ = Debug.log "task" effects
+      _ = Debug.log "effects" effects
       --Effects.toTask actionInbox.address <| Effects.batch effects
     in
       Effects.toTask actionInbox.address <| Maybe.withDefault Effects.none <| List.head effects

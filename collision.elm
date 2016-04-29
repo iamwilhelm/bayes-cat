@@ -42,18 +42,14 @@ collide self other =
 
 interact : Signal.Address (List Action) -> Entity -> Entity -> Effects Action
 interact address self other =
-  let
-    _ = Debug.log "in interact--self : " self.role
-    a = Debug.log "in interact--other: " other.role
-  in
-    if inside self other then
-      case (self.role, other.role) of
-        (Egg, Cursor) ->
-          Effects.task <| Task.succeed (Action.Entity Action.Open)
-        _ ->
-          Effects.none
-    else
-      Effects.none
+  if inside self other then
+    case (self.role, other.role) of
+      (Egg, Cursor) ->
+        Effects.task <| Task.succeed (Action.Entity Action.Open)
+      _ ->
+        Effects.none
+  else
+    Effects.none
 
 ------------- pairing algorithms
 
