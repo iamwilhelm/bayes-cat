@@ -3,8 +3,11 @@ module Collision where
 import Entity exposing (..)
 import Component
 import Vec exposing (..)
+
 import Signal
-import Action
+import Task
+import Effects exposing (Effects)
+import Action exposing (Action, EntityAction)
 
 type alias Range = (Float, Float)
 
@@ -37,38 +40,35 @@ collide self other =
     space = Component.setVel (Vec.neg self.space.vel) self.space
   }
 
-interact : Signal.Address Action.Action -> Entity -> Entity -> Entity
-interact address other self =
-  if inside self other then
-    -- run through all interactions of self and update self
-    List.foldl (\interaction entity ->
-      Entity.route address interaction entity other
-    ) self self.interactions
-
-    -- run through all interactions of other and update other
-  else
-    self
+interact : Signal.Address (List Action) -> Entity -> Entity -> Effects Action
+interact address self other =
+  let
+    _ = Debug.log "in interact--self : " self.role
+    a = Debug.log "in interact--other: " other.role
+  in
+    if inside self other then
+      case (self.role, other.role) of
+        (Egg, Cursor) ->
+          Effects.task <| Task.succeed (Action.Entity Action.Open)
+        _ ->
+          Effects.none
+    else
+      Effects.none
 
 ------------- pairing algorithms
 
--- interactionCallback : other -> target -> target
-pairwiseUpdate : (Entity -> Entity -> Entity) -> List Entity -> List Entity
-pairwiseUpdate interactionCallback entities =
-  if List.length entities <= 1 then
-    entities
-  else
-    List.indexedMap (\index entity ->
-      if index == 0 then
-        entity
-      else
-        List.foldl interactionCallback entity
-        <| List.drop (index + 1) entities
-    ) entities
-
-squaredUpdate : (Entity -> Entity -> Entity) -> List Entity -> List Entity
+squaredUpdate : (Entity -> Entity -> Effects Action) -> List Entity -> List (Effects Action)
 squaredUpdate interactionCallback entities =
-  List.indexedMap (\index entity ->
-    List.foldl (\other self ->
-      interactionCallback other self
-    ) entity <| List.append (List.take index entities) (List.drop (index + 1) entities)
-  ) entities
+  let
+    everyOtherEntities index entities =
+      List.append (List.take index entities) (List.drop (index + 1) entities)
+
+    gatherEffects interactionCallback entity otherEntities =
+      List.foldl (\other effects ->
+        (interactionCallback entity other) :: effects
+      ) [] otherEntities
+  in
+    List.concat
+    <| List.indexedMap (\index entity ->
+         gatherEffects interactionCallback entity (everyOtherEntities index entities)
+       ) entities

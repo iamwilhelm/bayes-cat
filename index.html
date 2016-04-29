@@ -9518,6 +9518,228 @@ Elm.Window.make = function (_elm) {
                                ,dimensions: dimensions
                                ,width: width
                                ,height: height};
+};Elm.Native.Effects = {};
+Elm.Native.Effects.make = function(localRuntime) {
+
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Effects = localRuntime.Native.Effects || {};
+	if (localRuntime.Native.Effects.values)
+	{
+		return localRuntime.Native.Effects.values;
+	}
+
+	var Task = Elm.Native.Task.make(localRuntime);
+	var Utils = Elm.Native.Utils.make(localRuntime);
+	var Signal = Elm.Signal.make(localRuntime);
+	var List = Elm.Native.List.make(localRuntime);
+
+
+	// polyfill so things will work even if rAF is not available for some reason
+	var _requestAnimationFrame =
+		typeof requestAnimationFrame !== 'undefined'
+			? requestAnimationFrame
+			: function(cb) { setTimeout(cb, 1000 / 60); }
+			;
+
+
+	// batchedSending and sendCallback implement a small state machine in order
+	// to schedule only one send(time) call per animation frame.
+	//
+	// Invariants:
+	// 1. In the NO_REQUEST state, there is never a scheduled sendCallback.
+	// 2. In the PENDING_REQUEST and EXTRA_REQUEST states, there is always exactly
+	//    one scheduled sendCallback.
+	var NO_REQUEST = 0;
+	var PENDING_REQUEST = 1;
+	var EXTRA_REQUEST = 2;
+	var state = NO_REQUEST;
+	var messageArray = [];
+
+
+	function batchedSending(address, tickMessages)
+	{
+		// insert ticks into the messageArray
+		var foundAddress = false;
+
+		for (var i = messageArray.length; i--; )
+		{
+			if (messageArray[i].address === address)
+			{
+				foundAddress = true;
+				messageArray[i].tickMessages = A3(List.foldl, List.cons, messageArray[i].tickMessages, tickMessages);
+				break;
+			}
+		}
+
+		if (!foundAddress)
+		{
+			messageArray.push({ address: address, tickMessages: tickMessages });
+		}
+
+		// do the appropriate state transition
+		switch (state)
+		{
+			case NO_REQUEST:
+				_requestAnimationFrame(sendCallback);
+				state = PENDING_REQUEST;
+				break;
+			case PENDING_REQUEST:
+				state = PENDING_REQUEST;
+				break;
+			case EXTRA_REQUEST:
+				state = PENDING_REQUEST;
+				break;
+		}
+	}
+
+
+	function sendCallback(time)
+	{
+		switch (state)
+		{
+			case NO_REQUEST:
+				// This state should not be possible. How can there be no
+				// request, yet somehow we are actively fulfilling a
+				// request?
+				throw new Error(
+					'Unexpected send callback.\n' +
+					'Please report this to <https://github.com/evancz/elm-effects/issues>.'
+				);
+
+			case PENDING_REQUEST:
+				// At this point, we do not *know* that another frame is
+				// needed, but we make an extra request to rAF just in
+				// case. It's possible to drop a frame if rAF is called
+				// too late, so we just do it preemptively.
+				_requestAnimationFrame(sendCallback);
+				state = EXTRA_REQUEST;
+
+				// There's also stuff we definitely need to send.
+				send(time);
+				return;
+
+			case EXTRA_REQUEST:
+				// Turns out the extra request was not needed, so we will
+				// stop calling rAF. No reason to call it all the time if
+				// no one needs it.
+				state = NO_REQUEST;
+				return;
+		}
+	}
+
+
+	function send(time)
+	{
+		for (var i = messageArray.length; i--; )
+		{
+			var messages = A3(
+				List.foldl,
+				F2( function(toAction, list) { return List.Cons(toAction(time), list); } ),
+				List.Nil,
+				messageArray[i].tickMessages
+			);
+			Task.perform( A2(Signal.send, messageArray[i].address, messages) );
+		}
+		messageArray = [];
+	}
+
+
+	function requestTickSending(address, tickMessages)
+	{
+		return Task.asyncFunction(function(callback) {
+			batchedSending(address, tickMessages);
+			callback(Task.succeed(Utils.Tuple0));
+		});
+	}
+
+
+	return localRuntime.Native.Effects.values = {
+		requestTickSending: F2(requestTickSending)
+	};
+
+};
+Elm.Effects = Elm.Effects || {};
+Elm.Effects.make = function (_elm) {
+   "use strict";
+   _elm.Effects = _elm.Effects || {};
+   if (_elm.Effects.values) return _elm.Effects.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Native$Effects = Elm.Native.Effects.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm),
+   $Time = Elm.Time.make(_elm);
+   var _op = {};
+   var ignore = function (task) {
+      return A2($Task.map,$Basics.always({ctor: "_Tuple0"}),task);
+   };
+   var requestTickSending = $Native$Effects.requestTickSending;
+   var toTaskHelp = F3(function (address,effect,_p0) {
+      var _p1 = _p0;
+      var _p5 = _p1._1;
+      var _p4 = _p1;
+      var _p3 = _p1._0;
+      var _p2 = effect;
+      switch (_p2.ctor)
+      {case "Task": var reporter = A2($Task.andThen,
+           _p2._0,
+           function (answer) {
+              return A2($Signal.send,address,_U.list([answer]));
+           });
+           return {ctor: "_Tuple2"
+                  ,_0: A2($Task.andThen,
+                  _p3,
+                  $Basics.always(ignore($Task.spawn(reporter))))
+                  ,_1: _p5};
+         case "Tick": return {ctor: "_Tuple2"
+                             ,_0: _p3
+                             ,_1: A2($List._op["::"],_p2._0,_p5)};
+         case "None": return _p4;
+         default: return A3($List.foldl,toTaskHelp(address),_p4,_p2._0);}
+   });
+   var toTask = F2(function (address,effect) {
+      var _p6 = A3(toTaskHelp,
+      address,
+      effect,
+      {ctor: "_Tuple2"
+      ,_0: $Task.succeed({ctor: "_Tuple0"})
+      ,_1: _U.list([])});
+      var combinedTask = _p6._0;
+      var tickMessages = _p6._1;
+      return $List.isEmpty(tickMessages) ? combinedTask : A2($Task.andThen,
+      combinedTask,
+      $Basics.always(A2(requestTickSending,address,tickMessages)));
+   });
+   var Never = function (a) {    return {ctor: "Never",_0: a};};
+   var Batch = function (a) {    return {ctor: "Batch",_0: a};};
+   var batch = Batch;
+   var None = {ctor: "None"};
+   var none = None;
+   var Tick = function (a) {    return {ctor: "Tick",_0: a};};
+   var tick = Tick;
+   var Task = function (a) {    return {ctor: "Task",_0: a};};
+   var task = Task;
+   var map = F2(function (func,effect) {
+      var _p7 = effect;
+      switch (_p7.ctor)
+      {case "Task": return Task(A2($Task.map,func,_p7._0));
+         case "Tick": return Tick(function (_p8) {
+              return func(_p7._0(_p8));
+           });
+         case "None": return None;
+         default: return Batch(A2($List.map,map(func),_p7._0));}
+   });
+   return _elm.Effects.values = {_op: _op
+                                ,none: none
+                                ,task: task
+                                ,tick: tick
+                                ,map: map
+                                ,batch: batch
+                                ,toTask: toTask};
 };(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
@@ -12010,97 +12232,41 @@ Elm.Entity.make = function (_elm) {
    $Color = Elm.Color.make(_elm),
    $Component = Elm.Component.make(_elm),
    $Debug = Elm.Debug.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm);
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm);
    var _op = {};
-   var iaNoOp = F2(function (self,other) {    return self;});
+   var iaNoOp = F2(function (self,other) {
+      return $Effects.none;
+   });
    var iaEggCursor = F3(function (address,self,other) {
       if (_U.eq(self.label.name,"Egg") && _U.eq(other.label.name,
       "Cursor")) {
             var da = A2($Debug.log,"address: ",address);
-            var task = A2($Signal.send,
-            address,
-            $Action.Entity($Action.Open));
-            var dm = A2($Debug.log,"task: ",task);
-            return self;
-         } else return self;
-   });
-   var iaEggEgg = F2(function (self,other) {
-      return _U.eq(self.label.name,
-      "Egg") && _U.eq(other.label.name,"Egg") ? _U.update(self,
-      {corp: A2($Component.setColor,$Color.blue,self.corp)}) : self;
-   });
-   var iaLabelerTurtle = F2(function (self,other) {
-      return _U.eq(self.label.name,
-      "Bomb") && _U.eq(other.label.name,
-      "Turtle") ? self : _U.eq(self.label.name,
-      "Ticking") && _U.eq(other.label.name,
-      "Turtle") ? self : _U.eq(self.label.name,
-      "Not Ticking") && _U.eq(other.label.name,
-      "Turtle") ? self : self;
-   });
-   var iaTurtleCursor = F2(function (self,other) {
-      return _U.eq(self.label.name,
-      "Turtle") && _U.eq(other.label.name,"Cursor") ? _U.update(self,
-      {space: A2($Component.setVel,
-      {ctor: "_Tuple2",_0: 100,_1: -50},
-      self.space)
-      ,corp: A2($Component.setColor,$Color.red,self.corp)}) : self;
-   });
-   var iaTurtleTurtle = F2(function (self,other) {
-      return _U.eq(self.label.name,
-      "Turtle") && _U.eq(other.label.name,"Turtle") ? self : self;
-   });
-   var iaTurtleLabeler = F2(function (self,other) {
-      return _U.eq(self.label.name,
-      "Turtle") && _U.eq(other.label.name,"Bomb") ? _U.update(self,
-      {corp: A2($Component.setColor,
-      $Color.red,
-      self.corp)}) : _U.eq(self.label.name,
-      "Turtle") && _U.eq(other.label.name,"Ticking") ? _U.update(self,
-      {corp: A2($Component.setColor,
-      $Color.orange,
-      self.corp)}) : _U.eq(self.label.name,
-      "Turtle") && _U.eq(other.label.name,
-      "Not Ticking") ? _U.update(self,
-      {corp: A2($Component.setColor,$Color.yellow,self.corp)}) : self;
+            return $Effects.task($Task.succeed($Action.Entity($Action.Open)));
+         } else return $Effects.none;
    });
    var route = F2(function (address,interaction) {
       var _p0 = interaction;
-      _v0_6: do {
-         if (_p0.ctor === "_Tuple2") {
-               switch (_p0._0.ctor)
-               {case "Turtle": switch (_p0._1.ctor)
-                    {case "Labeler": return iaTurtleLabeler;
-                       case "Turtle": return iaTurtleTurtle;
-                       case "Cursor": return iaTurtleCursor;
-                       default: break _v0_6;}
-                  case "Labeler": if (_p0._1.ctor === "Turtle") {
-                          return iaLabelerTurtle;
-                       } else {
-                          break _v0_6;
-                       }
-                  case "Egg": switch (_p0._1.ctor)
-                    {case "Egg": return iaEggEgg;
-                       case "Cursor": return iaEggCursor(address);
-                       default: break _v0_6;}
-                  default: break _v0_6;}
-            } else {
-               break _v0_6;
-            }
-      } while (false);
-      return iaNoOp;
+      if (_p0.ctor === "_Tuple2" && _p0._0.ctor === "Egg" && _p0._1.ctor === "Cursor")
+      {
+            return iaEggCursor(address);
+         } else {
+            return iaNoOp;
+         }
    });
    var Label = F2(function (a,b) {    return {name: a,color: b};});
-   var Entity = F6(function (a,b,c,d,e,f) {
-      return {space: a
-             ,corp: b
-             ,control: c
-             ,view: d
-             ,interactions: e
-             ,label: f};
+   var Entity = F7(function (a,b,c,d,e,f,g) {
+      return {role: a
+             ,space: b
+             ,corp: c
+             ,control: d
+             ,view: e
+             ,interactions: f
+             ,label: g};
    });
    var Egg = {ctor: "Egg"};
    var Labeler = {ctor: "Labeler"};
@@ -12114,11 +12280,6 @@ Elm.Entity.make = function (_elm) {
                                ,Entity: Entity
                                ,Label: Label
                                ,route: route
-                               ,iaTurtleLabeler: iaTurtleLabeler
-                               ,iaTurtleTurtle: iaTurtleTurtle
-                               ,iaTurtleCursor: iaTurtleCursor
-                               ,iaLabelerTurtle: iaLabelerTurtle
-                               ,iaEggEgg: iaEggEgg
                                ,iaEggCursor: iaEggCursor
                                ,iaNoOp: iaNoOp};
 };Elm.Collision = Elm.Collision || {};
@@ -12131,38 +12292,41 @@ Elm.Collision.make = function (_elm) {
    $Basics = Elm.Basics.make(_elm),
    $Component = Elm.Component.make(_elm),
    $Debug = Elm.Debug.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
    $Entity = Elm.Entity.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm),
    $Vec = Elm.Vec.make(_elm);
    var _op = {};
    var squaredUpdate = F2(function (interactionCallback,entities) {
-      return A2($List.indexedMap,
-      F2(function (index,entity) {
+      var gatherEffects = F3(function (interactionCallback,
+      entity,
+      otherEntities) {
          return A3($List.foldl,
-         F2(function (other,self) {
-            return A2(interactionCallback,other,self);
+         F2(function (other,effects) {
+            return A2($List._op["::"],
+            A2(interactionCallback,entity,other),
+            effects);
          }),
-         entity,
-         A2($List.append,
+         _U.list([]),
+         otherEntities);
+      });
+      var everyOtherEntities = F2(function (index,entities) {
+         return A2($List.append,
          A2($List.take,index,entities),
-         A2($List.drop,index + 1,entities)));
-      }),
-      entities);
-   });
-   var pairwiseUpdate = F2(function (interactionCallback,
-   entities) {
-      return _U.cmp($List.length(entities),
-      1) < 1 ? entities : A2($List.indexedMap,
+         A2($List.drop,index + 1,entities));
+      });
+      return $List.concat(A2($List.indexedMap,
       F2(function (index,entity) {
-         return _U.eq(index,0) ? entity : A3($List.foldl,
+         return A3(gatherEffects,
          interactionCallback,
          entity,
-         A2($List.drop,index + 1,entities));
+         A2(everyOtherEntities,index,entities));
       }),
-      entities);
+      entities));
    });
    var collide = F2(function (self,other) {
       return _U.update(self,
@@ -12206,21 +12370,67 @@ Elm.Collision.make = function (_elm) {
       ,_0: $Vec.y(othrMin)
       ,_1: $Vec.y(othrMax)}) ? true : false;
    });
-   var interact = F3(function (address,other,self) {
-      return A2(inside,self,other) ? A3($List.foldl,
-      F2(function (interaction,entity) {
-         return A4($Entity.route,address,interaction,entity,other);
-      }),
-      self,
-      self.interactions) : self;
+   var interact = F3(function (address,self,other) {
+      var a = A2($Debug.log,"in interact--other: ",other.role);
+      var _p8 = A2($Debug.log,"in interact--self : ",self.role);
+      if (A2(inside,self,other)) {
+            var _p9 = {ctor: "_Tuple2",_0: self.role,_1: other.role};
+            if (_p9.ctor === "_Tuple2" && _p9._0.ctor === "Egg" && _p9._1.ctor === "Cursor")
+            {
+                  return $Effects.task($Task.succeed($Action.Entity($Action.Open)));
+               } else {
+                  return $Effects.none;
+               }
+         } else return $Effects.none;
    });
    return _elm.Collision.values = {_op: _op
                                   ,between: between
                                   ,inside: inside
                                   ,collide: collide
                                   ,interact: interact
-                                  ,pairwiseUpdate: pairwiseUpdate
                                   ,squaredUpdate: squaredUpdate};
+};Elm.Entity = Elm.Entity || {};
+Elm.Entity.Egg = Elm.Entity.Egg || {};
+Elm.Entity.Egg.make = function (_elm) {
+   "use strict";
+   _elm.Entity = _elm.Entity || {};
+   _elm.Entity.Egg = _elm.Entity.Egg || {};
+   if (_elm.Entity.Egg.values) return _elm.Entity.Egg.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Color = Elm.Color.make(_elm),
+   $Component = Elm.Component.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Entity = Elm.Entity.make(_elm),
+   $Graphics$Collage = Elm.Graphics.Collage.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Vec = Elm.Vec.make(_elm);
+   var _op = {};
+   var create = F2(function (pos,vel) {
+      return {role: $Entity.Egg
+             ,space: A3($Component.createSpatial,
+             pos,
+             vel,
+             {ctor: "_Tuple2",_0: 0,_1: 0})
+             ,corp: A2($Component.createCorporeal,
+             {ctor: "_Tuple2",_0: 35,_1: 35},
+             $Color.gray)
+             ,control: F2(function (input,space) {    return space;})
+             ,view: function (corp) {
+                return $Graphics$Collage.group(_U.list([A2($Graphics$Collage.filled,
+                corp.color,
+                $Graphics$Collage.circle($Basics.fst(corp.dim) / 2))]));
+             }
+             ,interactions: _U.list([{ctor: "_Tuple2"
+                                     ,_0: $Entity.Egg
+                                     ,_1: $Entity.Egg}
+                                    ,{ctor: "_Tuple2",_0: $Entity.Egg,_1: $Entity.Cursor}])
+             ,label: {name: "Egg",color: $Color.black}};
+   });
+   return _elm.Entity.Egg.values = {_op: _op,create: create};
 };Elm.Main = Elm.Main || {};
 Elm.Main.make = function (_elm) {
    "use strict";
@@ -12233,7 +12443,9 @@ Elm.Main.make = function (_elm) {
    $Color = Elm.Color.make(_elm),
    $Component = Elm.Component.make(_elm),
    $Debug = Elm.Debug.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
    $Entity = Elm.Entity.make(_elm),
+   $Entity$Egg = Elm.Entity.Egg.make(_elm),
    $Graphics$Collage = Elm.Graphics.Collage.make(_elm),
    $Graphics$Element = Elm.Graphics.Element.make(_elm),
    $Input = Elm.Input.make(_elm),
@@ -12243,11 +12455,12 @@ Elm.Main.make = function (_elm) {
    $Random = Elm.Random.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm),
    $Time = Elm.Time.make(_elm),
    $Vec = Elm.Vec.make(_elm),
    $Window = Elm.Window.make(_elm);
    var _op = {};
-   var inbox = $Signal.mailbox($Action.NoOp);
+   var actionInbox = $Signal.mailbox(_U.list([$Action.NoOp]));
    var screenToWorld = F2(function (_p1,_p0) {
       var _p2 = _p1;
       var _p3 = _p0;
@@ -12267,11 +12480,11 @@ Elm.Main.make = function (_elm) {
    $Mouse.position),
    delta));
    var actionInputSignal = A3($Signal.map2,
-   F2(function (input,action) {
-      return {ctor: "_Tuple2",_0: input,_1: action};
+   F2(function (input,actions) {
+      return {ctor: "_Tuple2",_0: input,_1: actions};
    }),
    inputSignal,
-   inbox.signal);
+   actionInbox.signal);
    var viewEntity = function (entity) {
       return A2($Graphics$Collage.move,
       entity.space.pos,
@@ -12284,7 +12497,7 @@ Elm.Main.make = function (_elm) {
       _p5._1,
       A2($List.map,viewEntity,app.entities));
    });
-   var simulatePhysics = F2(function (input,entity) {
+   var simulateEntity = F2(function (input,entity) {
       return _U.update(entity,
       {space: function (_p6) {
          return A2($Component.setPos,
@@ -12302,19 +12515,25 @@ Elm.Main.make = function (_elm) {
       return _U.update(entity,
       {space: A2(entity.control,input,entity.space)});
    });
-   var updateApp = F2(function (input,app) {
-      return _U.update(app,
-      {entities: A2($List.map,
-      function (_p7) {
-         return A2(simulatePhysics,input,A2(controlEntity,input,_p7));
-      },
-      app.entities)});
+   var updateApp = F2(function (input,_p7) {
+      var _p8 = _p7;
+      var _p10 = _p8._0;
+      return {ctor: "_Tuple2"
+             ,_0: _U.update(_p10,
+             {entities: A2($List.map,
+             function (_p9) {
+                return A2(simulateEntity,input,A2(controlEntity,input,_p9));
+             },
+             _p10.entities)})
+             ,_1: _p8._1};
    });
-   var collisionDetect = F2(function (address,app) {
-      return _U.update(app,
-      {entities: A2($Collision.squaredUpdate,
-      $Collision.interact(address),
-      app.entities)});
+   var collisionDetect = F2(function (inboxAddress,_p11) {
+      var _p12 = _p11;
+      var _p13 = _p12._0;
+      var newEffects = A2($Collision.squaredUpdate,
+      $Collision.interact(inboxAddress),
+      _p13.entities);
+      return {ctor: "_Tuple2",_0: _p13,_1: newEffects};
    });
    var borderCollisionDetect = F2(function (input,app) {
       var withinBounds = function (entity) {
@@ -12324,14 +12543,35 @@ Elm.Main.make = function (_elm) {
          (0 - $Basics.toFloat($Basics.snd(input.window))) / 2) > 0 && _U.cmp($Vec.y(entity.space.pos),
          $Basics.toFloat($Basics.snd(input.window)) / 2) < 0));
       };
-      return _U.update(app,
-      {entities: A2($List.filter,withinBounds,app.entities)});
+      return {ctor: "_Tuple2"
+             ,_0: _U.update(app,
+             {entities: A2($List.filter,withinBounds,app.entities)})
+             ,_1: $Effects.none};
    });
-   var updateEntities = F3(function (address,_p8,entities) {
-      var _p9 = _p8;
-      var _p10 = _p9._1;
-      if (_p10.ctor === "Open") {
-            var _p11 = A2($Debug.log,"opened!",3);
+   var sourceTurtles = F2(function (input,app) {
+      var _p14 = A2($Random.generate,$Random.bool,app.seed);
+      var shouldCreate = _p14._0;
+      var newSeed1 = _p14._1;
+      var _p15 = A2($Random.generate,
+      A2($Random.$float,-300,300),
+      newSeed1);
+      var xPos = _p15._0;
+      var newSeed0 = _p15._1;
+      var updatedEntities = _U.cmp($List.length(app.entities),
+      60) < 0 && _U.eq(shouldCreate,true) ? A2($List._op["::"],
+      A2($Entity$Egg.create,
+      {ctor: "_Tuple2",_0: xPos,_1: 300},
+      {ctor: "_Tuple2",_0: 0,_1: -300}),
+      app.entities) : app.entities;
+      return {ctor: "_Tuple2"
+             ,_0: _U.update(app,{entities: updatedEntities,seed: newSeed0})
+             ,_1: $Effects.none};
+   });
+   var updateEntities = F3(function (address,_p16,entities) {
+      var _p17 = _p16;
+      var _p18 = _p17._1;
+      if (_p18.ctor === "Open") {
+            var _p19 = A2($Debug.log,"opened!",3);
             return A2($List.map,
             function (entity) {
                return _U.update(entity,
@@ -12342,67 +12582,38 @@ Elm.Main.make = function (_elm) {
             return entities;
          }
    });
-   var update = F3(function (address,_p12,app) {
-      var _p13 = _p12;
-      var _p17 = _p13._0;
-      var _p16 = _p13._1;
-      var _p14 = A2($Debug.log,"update action: ",_p16);
-      var _p15 = _p16;
-      if (_p15.ctor === "NoOp") {
+   var update = F3(function (inboxAddress,_p21,_p20) {
+      var _p22 = _p21;
+      var _p27 = _p22._0;
+      var _p23 = _p20;
+      var _p26 = _p23._0;
+      var action = A2($Maybe.withDefault,
+      $Action.NoOp,
+      $List.head(_p22._1));
+      var _p24 = A2($Debug.log,"update action: ",action);
+      var _p25 = action;
+      if (_p25.ctor === "NoOp") {
             return A2(updateApp,
-            _p17,
-            A2(collisionDetect,address,A2(borderCollisionDetect,_p17,app)));
+            _p27,
+            A2(collisionDetect,
+            inboxAddress,
+            {ctor: "_Tuple2",_0: _p26,_1: _U.list([$Effects.none])}));
          } else {
-            return _U.update(app,
-            {entities: A3(updateEntities,
-            address,
-            {ctor: "_Tuple2",_0: _p17,_1: _p15._0},
-            app.entities)});
+            return {ctor: "_Tuple2"
+                   ,_0: _U.update(_p26,
+                   {entities: A3(updateEntities,
+                   inboxAddress,
+                   {ctor: "_Tuple2",_0: _p27,_1: _p25._0},
+                   _p26.entities)})
+                   ,_1: _U.list([$Effects.none])};
          }
    });
    var App = F2(function (a,b) {
       return {entities: a,seed: b};
    });
-   var createEgg = F2(function (pos,vel) {
-      return {space: A3($Component.createSpatial,
-             pos,
-             vel,
-             {ctor: "_Tuple2",_0: 0,_1: 0})
-             ,corp: A2($Component.createCorporeal,
-             {ctor: "_Tuple2",_0: 35,_1: 35},
-             $Color.gray)
-             ,control: F2(function (input,space) {    return space;})
-             ,view: function (corp) {
-                return $Graphics$Collage.group(_U.list([A2($Graphics$Collage.filled,
-                corp.color,
-                $Graphics$Collage.circle($Basics.fst(corp.dim) / 2))]));
-             }
-             ,interactions: _U.list([{ctor: "_Tuple2"
-                                     ,_0: $Entity.Egg
-                                     ,_1: $Entity.Egg}
-                                    ,{ctor: "_Tuple2",_0: $Entity.Egg,_1: $Entity.Cursor}])
-             ,label: {name: "Egg",color: $Color.black}};
-   });
-   var sourceTurtles = F2(function (input,app) {
-      var _p18 = A2($Random.generate,$Random.bool,app.seed);
-      var shouldCreate = _p18._0;
-      var newSeed1 = _p18._1;
-      var _p19 = A2($Random.generate,
-      A2($Random.$float,-300,300),
-      newSeed1);
-      var xPos = _p19._0;
-      var newSeed0 = _p19._1;
-      var updatedEntities = _U.cmp($List.length(app.entities),
-      60) < 0 && _U.eq(shouldCreate,true) ? A2($List._op["::"],
-      A2(createEgg,
-      {ctor: "_Tuple2",_0: xPos,_1: 300},
-      {ctor: "_Tuple2",_0: 0,_1: -300}),
-      app.entities) : app.entities;
-      return _U.update(app,
-      {entities: updatedEntities,seed: newSeed0});
-   });
    var createTurtle = function (pos) {
-      return {space: A3($Component.createSpatial,
+      return {role: $Entity.Turtle
+             ,space: A3($Component.createSpatial,
              pos,
              {ctor: "_Tuple2",_0: 0,_1: -300},
              {ctor: "_Tuple2",_0: 0,_1: 0})
@@ -12422,7 +12633,8 @@ Elm.Main.make = function (_elm) {
                                     ,{ctor: "_Tuple2",_0: $Entity.Turtle,_1: $Entity.Cursor}])
              ,label: {name: "Turtle",color: $Color.black}};
    };
-   var initCursor = {space: A3($Component.createSpatial,
+   var initCursor = {role: $Entity.Cursor
+                    ,space: A3($Component.createSpatial,
                     {ctor: "_Tuple2",_0: 0,_1: 0},
                     {ctor: "_Tuple2",_0: 0,_1: 0},
                     {ctor: "_Tuple2",_0: 0,_1: 0})
@@ -12439,20 +12651,34 @@ Elm.Main.make = function (_elm) {
                     }
                     ,interactions: _U.list([])
                     ,label: {name: "Cursor",color: $Color.black}};
-   var initApp = {entities: _U.list([A2(createEgg,
+   var initApp = {entities: _U.list([A2($Entity$Egg.create,
                                     {ctor: "_Tuple2",_0: 0,_1: 300},
                                     {ctor: "_Tuple2",_0: 0,_1: 0})
                                     ,initCursor])
                  ,seed: $Random.initialSeed(0)};
-   var appState = A3($Signal.foldp,
-   update(inbox.address),
-   initApp,
+   var stateChangeSignal = A3($Signal.foldp,
+   update(actionInbox.address),
+   {ctor: "_Tuple2",_0: initApp,_1: _U.list([$Effects.none])},
    actionInputSignal);
-   var main = A3($Signal.map2,view,$Window.dimensions,appState);
+   var appSignal = A2($Signal.map,$Basics.fst,stateChangeSignal);
+   var main = A3($Signal.map2,view,$Window.dimensions,appSignal);
+   var effectSignal = A2($Signal.map,
+   $Basics.snd,
+   stateChangeSignal);
+   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",
+   A2($Signal.map,
+   function (effects) {
+      var _p28 = A2($Debug.log,"task",effects);
+      return A2($Effects.toTask,
+      actionInbox.address,
+      A2($Maybe.withDefault,$Effects.none,$List.head(effects)));
+   },
+   effectSignal));
    var createLabel = F2(function (name,colour) {
       return {name: name,color: colour};
    });
-   var bombLabeler = {space: A3($Component.createSpatial,
+   var bombLabeler = {role: $Entity.Labeler
+                     ,space: A3($Component.createSpatial,
                      {ctor: "_Tuple2",_0: 0,_1: 250},
                      {ctor: "_Tuple2",_0: 0,_1: 0},
                      {ctor: "_Tuple2",_0: 0,_1: 0})
@@ -12469,7 +12695,8 @@ Elm.Main.make = function (_elm) {
                                              ,_0: $Entity.Labeler
                                              ,_1: $Entity.Turtle}])
                      ,label: A2(createLabel,"Bomb",$Color.black)};
-   var tickingLabeler = {space: A3($Component.createSpatial,
+   var tickingLabeler = {role: $Entity.Labeler
+                        ,space: A3($Component.createSpatial,
                         {ctor: "_Tuple2",_0: -400 / 2 + 300 / 2,_1: 50},
                         {ctor: "_Tuple2",_0: 0,_1: 0},
                         {ctor: "_Tuple2",_0: 0,_1: 0})
@@ -12486,7 +12713,8 @@ Elm.Main.make = function (_elm) {
                                                 ,_0: $Entity.Labeler
                                                 ,_1: $Entity.Turtle}])
                         ,label: A2(createLabel,"Ticking",$Color.black)};
-   var notTickingLabeler = {space: A3($Component.createSpatial,
+   var notTickingLabeler = {role: $Entity.Labeler
+                           ,space: A3($Component.createSpatial,
                            {ctor: "_Tuple2",_0: 400 / 2 - 100 / 2,_1: 50},
                            {ctor: "_Tuple2",_0: 0,_1: 0},
                            {ctor: "_Tuple2",_0: 0,_1: 0})
@@ -12507,7 +12735,6 @@ Elm.Main.make = function (_elm) {
                              ,createLabel: createLabel
                              ,initCursor: initCursor
                              ,createTurtle: createTurtle
-                             ,createEgg: createEgg
                              ,bombLabeler: bombLabeler
                              ,tickingLabeler: tickingLabeler
                              ,notTickingLabeler: notTickingLabeler
@@ -12520,14 +12747,16 @@ Elm.Main.make = function (_elm) {
                              ,collisionDetect: collisionDetect
                              ,updateApp: updateApp
                              ,controlEntity: controlEntity
-                             ,simulatePhysics: simulatePhysics
+                             ,simulateEntity: simulateEntity
                              ,view: view
                              ,viewEntity: viewEntity
                              ,delta: delta
                              ,screenToWorld: screenToWorld
                              ,inputSignal: inputSignal
-                             ,inbox: inbox
+                             ,actionInbox: actionInbox
                              ,actionInputSignal: actionInputSignal
-                             ,appState: appState
+                             ,stateChangeSignal: stateChangeSignal
+                             ,appSignal: appSignal
+                             ,effectSignal: effectSignal
                              ,main: main};
 };</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>

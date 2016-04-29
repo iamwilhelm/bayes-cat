@@ -2,6 +2,8 @@ import Window
 import Mouse
 import Input exposing (Input)
 import Time exposing (Time)
+import Task exposing (Task)
+import Effects exposing (Effects)
 
 import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
@@ -25,6 +27,8 @@ import Debug
 
 -------------- Model methods
 
+import Entity.Egg
+
 createLabel : String -> Color -> Entity.Label
 createLabel name colour = {
     name = name
@@ -33,7 +37,8 @@ createLabel name colour = {
 
 initCursor : Entity
 initCursor = {
-    space = Component.createSpatial (0, 0) (0, 0) (0, 0)
+    role = Entity.Cursor
+  , space = Component.createSpatial (0, 0) (0, 0) (0, 0)
   , corp = Component.createCorporeal (15, 15) Color.darkGray
   , control = \input space -> Component.setPos input.mouse space
   , view = \corp -> filled corp.color <| ngon 3 (fst corp.dim)
@@ -43,7 +48,8 @@ initCursor = {
 
 createTurtle : Vec.Vec -> Entity
 createTurtle pos = {
-    space = Component.createSpatial pos (0, -300) (0, 0)
+    role = Entity.Turtle
+  , space = Component.createSpatial pos (0, -300) (0, 0)
   , corp = Component.createCorporeal (30, 30) Color.green
   , control = \input space ->
       space
@@ -59,25 +65,10 @@ createTurtle pos = {
   , label = { name = "Turtle", color = Color.black }
   }
 
-createEgg : Vec -> Vec -> Entity
-createEgg pos vel = {
-    space = Component.createSpatial pos vel (0, 0)
-  , corp = Component.createCorporeal (35, 35) Color.gray
-  , control = \input space -> space
-  , view = \corp ->
-      group [
-        filled corp.color <| circle ((fst corp.dim) / 2)
-      ]
-  , interactions = [
-      (Entity.Egg, Entity.Egg)
-    , (Entity.Egg, Entity.Cursor)
-    ]
-  , label = { name = "Egg", color = Color.black }
-  }
-
 bombLabeler : Entity
 bombLabeler = {
-    space = Component.createSpatial (0, 250) (0, 0) (0, 0)
+    role = Entity.Labeler
+  , space = Component.createSpatial (0, 250) (0, 0) (0, 0)
   , corp = Component.createCorporeal (400, 20) Color.lightRed
   , control = \input space -> space
   , view = \corp ->
@@ -90,7 +81,8 @@ bombLabeler = {
 
 tickingLabeler : Entity
 tickingLabeler = {
-    space = Component.createSpatial (-400 / 2 + 300 / 2, 50) (0, 0) (0, 0)
+    role = Entity.Labeler
+  , space = Component.createSpatial (-400 / 2 + 300 / 2, 50) (0, 0) (0, 0)
   , corp = Component.createCorporeal (300, 20) Color.lightPurple
   , control = \input space -> space
   , view = \corp ->
@@ -103,7 +95,8 @@ tickingLabeler = {
 
 notTickingLabeler : Entity
 notTickingLabeler = {
-    space = Component.createSpatial (400 / 2 - 100 / 2, 50) (0, 0) (0, 0)
+    role = Entity.Labeler
+  , space = Component.createSpatial (400 / 2 - 100 / 2, 50) (0, 0) (0, 0)
   , corp = Component.createCorporeal (100, 20) Color.lightGreen
   , control = \input space -> space
   , view = \corp ->
@@ -123,7 +116,7 @@ type alias App =
 initApp : App
 initApp = {
     entities = [
-      createEgg (0, 300) (0, 0)
+      Entity.Egg.create (0, 300) (0, 0)
     , initCursor
     ]
   , seed = Random.initialSeed 0
@@ -132,23 +125,25 @@ initApp = {
 
 -------------- Update methods
 
-update : Signal.Address Action -> (Input, Action) -> App -> App
-update address (input, action) app =
+update : Signal.Address (List Action) -> (Input, List Action) -> (App, List (Effects Action)) -> (App, List (Effects Action))
+update inboxAddress (input, actions) (app, _) =
   let
+    action = Maybe.withDefault Action.NoOp (List.head actions)
     _ = Debug.log "update action: " action
   in
     case action of
       Action.NoOp ->
         --sourceTurtles input app
-        borderCollisionDetect input app
-          |> collisionDetect address
+        -- borderCollisionDetect input app
+          collisionDetect inboxAddress (app, [Effects.none])
           |> updateApp input
       Action.Entity entityAction ->
-        { app |
-          entities = updateEntities address (input, entityAction) app.entities
+        ({ app |
+          entities = updateEntities inboxAddress (input, entityAction) app.entities
         }
+        , [Effects.none])
 
-updateEntities : Signal.Address Action -> (Input, EntityAction) -> List Entity -> List Entity
+updateEntities : Signal.Address (List Action) -> (Input, EntityAction) -> List Entity -> List Entity
 updateEntities address (input, action) entities =
   case action of
     Action.Open ->
@@ -163,20 +158,21 @@ updateEntities address (input, action) entities =
     _ ->
       entities
 
-sourceTurtles : Input -> App -> App
+sourceTurtles : Input -> App -> (App, Effects Action)
 sourceTurtles input app =
   let
     (shouldCreate, newSeed1) = Random.generate Random.bool app.seed
     (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
     updatedEntities =
       if List.length app.entities < 60 && shouldCreate == True then
-        createEgg (xPos, 300) (0, -300) :: app.entities
+        Entity.Egg.create (xPos, 300) (0, -300) :: app.entities
       else
         app.entities
   in
-    { app | entities = updatedEntities , seed = newSeed0 }
+    ({ app | entities = updatedEntities , seed = newSeed0 }
+    , Effects.none)
 
-borderCollisionDetect : Input -> App -> App
+borderCollisionDetect : Input -> App -> (App, Effects Action)
 borderCollisionDetect input app =
   let
     -- NOTE refactor. very similary to inside()
@@ -186,21 +182,24 @@ borderCollisionDetect input app =
       && Vec.y entity.space.pos > -(toFloat <| snd input.window) / 2
       && Vec.y entity.space.pos < (toFloat <| snd input.window) / 2
   in
-    { app |
-      entities = List.filter (withinBounds) app.entities
+    ({ app |
+        entities = List.filter (withinBounds) app.entities
+      }
+    , Effects.none)
+
+collisionDetect : Signal.Address (List Action) -> (App, List (Effects Action)) -> (App, List (Effects Action))
+collisionDetect inboxAddress (app, effects) =
+  let
+    newEffects = Collision.squaredUpdate (Collision.interact inboxAddress) app.entities
+  in
+    (app, newEffects)
+
+updateApp : Input -> (App, List (Effects Action)) -> (App, List (Effects Action))
+updateApp input (app, effects) =
+  ({ app |
+      entities = List.map (controlEntity input >> simulateEntity input) app.entities
     }
-
-collisionDetect : Signal.Address Action -> App -> App
-collisionDetect address app =
-  { app |
-    entities = Collision.squaredUpdate (Collision.interact address) app.entities
-  }
-
-updateApp : Input -> App -> App
-updateApp input app =
-  { app |
-    entities = List.map (simulatePhysics input << controlEntity input) app.entities
-  }
+  , effects)
 
 controlEntity : Input -> Entity -> Entity
 controlEntity input entity =
@@ -208,8 +207,8 @@ controlEntity input entity =
     space = entity.control input entity.space
   }
 
-simulatePhysics : Input -> Entity -> Entity
-simulatePhysics input entity =
+simulateEntity : Input -> Entity -> Entity
+simulateEntity input entity =
   { entity |
     space =
       Component.setVel (entity.space.vel |+ entity.space.acc .* input.delta)
@@ -219,7 +218,6 @@ simulatePhysics input entity =
 
 ---------------- View methods
 
--- FIXME shouldn't have to pass in window dims. try using input instead
 view : (Int, Int) -> App -> Element
 view (width, height) app =
   collage width height
@@ -247,20 +245,38 @@ inputSignal =
       (Signal.map2 screenToWorld Window.dimensions Mouse.position)
       delta
 
-------------- Main functions
+actionInbox : Signal.Mailbox (List Action)
+actionInbox =
+  Signal.mailbox [Action.NoOp]
 
-inbox : Signal.Mailbox Action.Action
-inbox =
-  Signal.mailbox Action.NoOp
-
-actionInputSignal : Signal (Input, Action.Action)
+actionInputSignal : Signal (Input, List Action)
 actionInputSignal =
-  Signal.map2 (\input action -> (input, action)) inputSignal inbox.signal
+  Signal.map2 (\input actions -> (input, actions)) inputSignal actionInbox.signal
 
-appState : Signal App
-appState =
-  Signal.foldp (update inbox.address) initApp actionInputSignal
+stateChangeSignal : Signal (App, List (Effects Action))
+stateChangeSignal =
+  Signal.foldp (update actionInbox.address) (initApp, [Effects.none]) actionInputSignal
+
+appSignal : Signal App
+appSignal =
+  Signal.map fst stateChangeSignal
+
+effectSignal : Signal (List (Effects Action))
+effectSignal =
+  Signal.map snd stateChangeSignal
+
+------------- Main functions
 
 main : Signal Element
 main =
-  Signal.map2 view Window.dimensions appState
+  Signal.map2 view Window.dimensions appSignal
+
+port tasks : Signal (Task Effects.Never ())
+port tasks =
+  Signal.map (\effects ->
+    let
+      _ = Debug.log "task" effects
+      --Effects.toTask actionInbox.address <| Effects.batch effects
+    in
+      Effects.toTask actionInbox.address <| Maybe.withDefault Effects.none <| List.head effects
+  ) effectSignal
