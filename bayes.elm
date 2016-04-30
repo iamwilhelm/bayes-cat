@@ -128,32 +128,28 @@ initApp = {
 -- e -> acc -> acc
 update : Signal.Address (List Action) -> (Input, List Action) -> (App, List (Effects Action)) -> (App, List (Effects Action))
 update inboxAddress (input, actions) (app, _) =
-  let
-    action = Maybe.withDefault Action.NoOp (List.head actions)
-  in
-    case action of
-      Action.NoOp ->
-        -- sourceTurtles input app
-        -- borderCollisionDetect input app
-        collisionDetect inboxAddress (app, []) |> updateApp input
-      Action.Entity entityAction ->
-        let
-          newEntities = updateEntities inboxAddress (input, entityAction) app.entities
-        in
-          collisionDetect inboxAddress ({ app | entities = newEntities } , [])
-          |> updateApp input
+  ({ app | entities = List.foldl actionateEntities app.entities actions } , [])
+  -- sourceTurtles input app
+  -- borderCollisionDetect input app
+  |> collisionDetect inboxAddress
+  |> updateApp input
 
-updateEntities : Signal.Address (List Action) -> (Input, EntityAction) -> List Entity -> List Entity
-updateEntities inboxAddress (input, action) entities =
+-- Execute actions that were triggered by effects
+actionateEntities : Action -> List Entity -> List Entity
+actionateEntities action entities =
+  case action of
+    Action.NoOp ->
+      entities
+    Action.Entity entityAction ->
+      List.map (actionateEntity entityAction) entities
+
+actionateEntity : EntityAction -> Entity -> Entity
+actionateEntity action entity =
   case action of
     Action.Open ->
-      List.map (\entity ->
-          { entity | corp = Component.setColor Color.blue entity.corp }
-        ) entities
+      { entity | corp = Component.setColor Color.blue entity.corp }
     Action.Explode ->
-      List.map (\entity ->
-          { entity | corp = Component.setColor Color.orange entity.corp }
-        ) entities
+      { entity | corp = Component.setColor Color.orange entity.corp }
 
 sourceTurtles : Input -> App -> (App, Effects Action)
 sourceTurtles input app =
