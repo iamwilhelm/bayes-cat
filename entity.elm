@@ -30,3 +30,11 @@ type alias Label = {
     name : String
   , color : Color
   }
+
+actionate : EntityAction -> Entity -> Entity
+actionate action entity =
+  case action of
+    Action.Open ->
+      { entity | corp = Component.setColor Color.blue entity.corp }
+    Action.Explode ->
+      { entity | corp = Component.setColor Color.orange entity.corp }

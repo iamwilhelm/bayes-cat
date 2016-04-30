@@ -7,7 +7,7 @@ import Graphics.Collage exposing (..)
 import Color exposing (Color)
 
 import Signal
-import Action exposing (Action, EntityAction)
+import Action exposing (Action, EggAction)
 import Vec exposing (..)
 
 create : Vec -> Vec -> Entity
@@ -26,3 +26,11 @@ create pos vel = {
     ]
   , label = { name = "Egg", color = Color.black }
   }
+
+actionate : EggAction -> Entity -> Entity
+actionate action entity =
+  case action of
+    Action.Boom ->
+      { entity | corp = Component.setColor Color.blue entity.corp }
+    Action.Whoa ->
+      { entity | corp = Component.setColor Color.orange entity.corp }

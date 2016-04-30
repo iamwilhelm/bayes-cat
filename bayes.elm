@@ -143,17 +143,9 @@ actionateEntities action entities =
     Action.NoOp ->
       entities
     Action.Entity entityAction ->
-      List.map (actionateEntity entityAction) entities
+      List.map (Entity.actionate entityAction) entities
     Action.Egg eggAction ->
-      entities
-
-actionateEntity : EntityAction -> Entity -> Entity
-actionateEntity action entity =
-  case action of
-    Action.Open ->
-      { entity | corp = Component.setColor Color.blue entity.corp }
-    Action.Explode ->
-      { entity | corp = Component.setColor Color.orange entity.corp }
+      List.map (Entity.Egg.actionate eggAction) entities
 
 sourceTurtles : Input -> AppState -> (AppState, Effects Action)
 sourceTurtles input app =
@@ -208,9 +200,9 @@ simulateEntity : Input -> Entity -> Entity
 simulateEntity input entity =
   { entity |
     space =
+      entity.space |>
       Component.setVel (entity.space.vel |+ entity.space.acc .* input.delta)
       >> Component.setPos (entity.space.pos |+ entity.space.vel .* input.delta)
-      <| entity.space
   }
 
 ---------------- View methods
