@@ -7,4 +7,4 @@ type Action =
 
 type EntityAction = Open | Explode
 
-type EggAction = Explode
+type EggAction = Boom | Whoa

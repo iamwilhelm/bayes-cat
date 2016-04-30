@@ -12055,15 +12055,21 @@ Elm.Action.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var Entity = function (a) {    return {ctor: "Entity",_0: a};};
-   var NoOp = {ctor: "NoOp"};
+   var Whoa = {ctor: "Whoa"};
+   var Boom = {ctor: "Boom"};
    var Explode = {ctor: "Explode"};
    var Open = {ctor: "Open"};
+   var Egg = function (a) {    return {ctor: "Egg",_0: a};};
+   var Entity = function (a) {    return {ctor: "Entity",_0: a};};
+   var NoOp = {ctor: "NoOp"};
    return _elm.Action.values = {_op: _op
+                               ,NoOp: NoOp
+                               ,Entity: Entity
+                               ,Egg: Egg
                                ,Open: Open
                                ,Explode: Explode
-                               ,NoOp: NoOp
-                               ,Entity: Entity};
+                               ,Boom: Boom
+                               ,Whoa: Whoa};
 };Elm.Vec = Elm.Vec || {};
 Elm.Vec.make = function (_elm) {
    "use strict";
@@ -12371,11 +12377,9 @@ Elm.Collision.make = function (_elm) {
       ,_1: $Vec.y(othrMax)}) ? true : false;
    });
    var interact = F3(function (address,self,other) {
-      var a = A2($Debug.log,"in interact--other: ",other.role);
-      var _p8 = A2($Debug.log,"in interact--self : ",self.role);
       if (A2(inside,self,other)) {
-            var _p9 = {ctor: "_Tuple2",_0: self.role,_1: other.role};
-            if (_p9.ctor === "_Tuple2" && _p9._0.ctor === "Egg" && _p9._1.ctor === "Cursor")
+            var _p8 = {ctor: "_Tuple2",_0: self.role,_1: other.role};
+            if (_p8.ctor === "_Tuple2" && _p8._0.ctor === "Egg" && _p8._1.ctor === "Cursor")
             {
                   return $Effects.task($Task.succeed($Action.Entity($Action.Open)));
                } else {
@@ -12460,7 +12464,7 @@ Elm.Main.make = function (_elm) {
    $Vec = Elm.Vec.make(_elm),
    $Window = Elm.Window.make(_elm);
    var _op = {};
-   var actionInbox = $Signal.mailbox(_U.list([$Action.NoOp]));
+   var actionInbox = $Signal.mailbox(_U.list([]));
    var screenToWorld = F2(function (_p1,_p0) {
       var _p2 = _p1;
       var _p3 = _p0;
@@ -12518,13 +12522,13 @@ Elm.Main.make = function (_elm) {
    var updateApp = F2(function (input,_p7) {
       var _p8 = _p7;
       var _p10 = _p8._0;
+      var newEntities = A2($List.map,
+      function (_p9) {
+         return A2(simulateEntity,input,A2(controlEntity,input,_p9));
+      },
+      _p10.entities);
       return {ctor: "_Tuple2"
-             ,_0: _U.update(_p10,
-             {entities: A2($List.map,
-             function (_p9) {
-                return A2(simulateEntity,input,A2(controlEntity,input,_p9));
-             },
-             _p10.entities)})
+             ,_0: _U.update(_p10,{entities: newEntities})
              ,_1: _p8._1};
    });
    var collisionDetect = F2(function (inboxAddress,_p11) {
@@ -12567,48 +12571,42 @@ Elm.Main.make = function (_elm) {
              ,_0: _U.update(app,{entities: updatedEntities,seed: newSeed0})
              ,_1: $Effects.none};
    });
-   var updateEntities = F3(function (address,_p16,entities) {
-      var _p17 = _p16;
-      var _p18 = _p17._1;
-      if (_p18.ctor === "Open") {
-            var _p19 = A2($Debug.log,"opened!",3);
-            return A2($List.map,
-            function (entity) {
-               return _U.update(entity,
-               {corp: A2($Component.setColor,$Color.orange,entity.corp)});
-            },
-            entities);
+   var actionateEntity = F2(function (action,entity) {
+      var _p16 = action;
+      if (_p16.ctor === "Open") {
+            return _U.update(entity,
+            {corp: A2($Component.setColor,$Color.blue,entity.corp)});
          } else {
-            return entities;
+            return _U.update(entity,
+            {corp: A2($Component.setColor,$Color.orange,entity.corp)});
          }
    });
-   var update = F3(function (inboxAddress,_p21,_p20) {
-      var _p22 = _p21;
-      var _p27 = _p22._0;
-      var _p23 = _p20;
-      var _p26 = _p23._0;
-      var action = A2($Maybe.withDefault,
-      $Action.NoOp,
-      $List.head(_p22._1));
-      var _p24 = A2($Debug.log,"update action: ",action);
-      var _p25 = action;
-      if (_p25.ctor === "NoOp") {
-            return A2(updateApp,
-            _p27,
-            A2(collisionDetect,
-            inboxAddress,
-            {ctor: "_Tuple2",_0: _p26,_1: _U.list([$Effects.none])}));
-         } else {
-            return {ctor: "_Tuple2"
-                   ,_0: _U.update(_p26,
-                   {entities: A3(updateEntities,
-                   inboxAddress,
-                   {ctor: "_Tuple2",_0: _p27,_1: _p25._0},
-                   _p26.entities)})
-                   ,_1: _U.list([$Effects.none])};
-         }
+   var actionateEntities = F2(function (action,entities) {
+      var _p17 = action;
+      switch (_p17.ctor)
+      {case "NoOp": return entities;
+         case "Entity": return A2($List.map,
+           actionateEntity(_p17._0),
+           entities);
+         default: return entities;}
    });
-   var App = F2(function (a,b) {
+   var update = F3(function (inboxAddress,_p19,_p18) {
+      var _p20 = _p19;
+      var _p21 = _p18;
+      var _p22 = _p21._0;
+      return A2(updateApp,
+      _p20._0,
+      A2(collisionDetect,
+      inboxAddress,
+      {ctor: "_Tuple2"
+      ,_0: _U.update(_p22,
+      {entities: A3($List.foldl,
+      actionateEntities,
+      _p22.entities,
+      _p20._1)})
+      ,_1: _U.list([])}));
+   });
+   var AppState = F2(function (a,b) {
       return {entities: a,seed: b};
    });
    var createTurtle = function (pos) {
@@ -12656,19 +12654,17 @@ Elm.Main.make = function (_elm) {
                                     {ctor: "_Tuple2",_0: 0,_1: 0})
                                     ,initCursor])
                  ,seed: $Random.initialSeed(0)};
-   var stateChangeSignal = A3($Signal.foldp,
+   var appSignal = A3($Signal.foldp,
    update(actionInbox.address),
-   {ctor: "_Tuple2",_0: initApp,_1: _U.list([$Effects.none])},
+   {ctor: "_Tuple2",_0: initApp,_1: _U.list([])},
    actionInputSignal);
-   var appSignal = A2($Signal.map,$Basics.fst,stateChangeSignal);
-   var main = A3($Signal.map2,view,$Window.dimensions,appSignal);
-   var effectSignal = A2($Signal.map,
-   $Basics.snd,
-   stateChangeSignal);
+   var stateSignal = A2($Signal.map,$Basics.fst,appSignal);
+   var main = A3($Signal.map2,view,$Window.dimensions,stateSignal);
+   var effectSignal = A2($Signal.map,$Basics.snd,appSignal);
    var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",
    A2($Signal.map,
    function (effects) {
-      var _p28 = A2($Debug.log,"task",effects);
+      var _p23 = A2($Debug.log,"effects",effects);
       return A2($Effects.toTask,
       actionInbox.address,
       A2($Maybe.withDefault,$Effects.none,$List.head(effects)));
@@ -12738,10 +12734,11 @@ Elm.Main.make = function (_elm) {
                              ,bombLabeler: bombLabeler
                              ,tickingLabeler: tickingLabeler
                              ,notTickingLabeler: notTickingLabeler
-                             ,App: App
+                             ,AppState: AppState
                              ,initApp: initApp
                              ,update: update
-                             ,updateEntities: updateEntities
+                             ,actionateEntities: actionateEntities
+                             ,actionateEntity: actionateEntity
                              ,sourceTurtles: sourceTurtles
                              ,borderCollisionDetect: borderCollisionDetect
                              ,collisionDetect: collisionDetect
@@ -12755,8 +12752,8 @@ Elm.Main.make = function (_elm) {
                              ,inputSignal: inputSignal
                              ,actionInbox: actionInbox
                              ,actionInputSignal: actionInputSignal
-                             ,stateChangeSignal: stateChangeSignal
                              ,appSignal: appSignal
+                             ,stateSignal: stateSignal
                              ,effectSignal: effectSignal
                              ,main: main};
 };</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>

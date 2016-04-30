@@ -108,12 +108,14 @@ notTickingLabeler = {
   }
 
 
-type alias App =
+type alias AppState =
   { entities: List Entity
   , seed: Random.Seed
   }
 
-initApp : App
+type alias App = (AppState, List (Effects Action))
+
+initApp : AppState
 initApp = {
     entities = [
       Entity.Egg.create (0, 300) (0, 0)
@@ -126,7 +128,7 @@ initApp = {
 -------------- Update methods
 
 -- e -> acc -> acc
-update : Signal.Address (List Action) -> (Input, List Action) -> (App, List (Effects Action)) -> (App, List (Effects Action))
+update : Signal.Address (List Action) -> (Input, List Action) -> App -> App
 update inboxAddress (input, actions) (app, _) =
   ({ app | entities = List.foldl actionateEntities app.entities actions } , [])
   -- sourceTurtles input app
@@ -142,6 +144,8 @@ actionateEntities action entities =
       entities
     Action.Entity entityAction ->
       List.map (actionateEntity entityAction) entities
+    Action.Egg eggAction ->
+      entities
 
 actionateEntity : EntityAction -> Entity -> Entity
 actionateEntity action entity =
@@ -151,7 +155,7 @@ actionateEntity action entity =
     Action.Explode ->
       { entity | corp = Component.setColor Color.orange entity.corp }
 
-sourceTurtles : Input -> App -> (App, Effects Action)
+sourceTurtles : Input -> AppState -> (AppState, Effects Action)
 sourceTurtles input app =
   let
     (shouldCreate, newSeed1) = Random.generate Random.bool app.seed
@@ -165,7 +169,7 @@ sourceTurtles input app =
     ({ app | entities = updatedEntities , seed = newSeed0 }
     , Effects.none)
 
-borderCollisionDetect : Input -> App -> (App, Effects Action)
+borderCollisionDetect : Input -> AppState -> (AppState, Effects Action)
 borderCollisionDetect input app =
   let
     -- NOTE refactor. very similary to inside()
@@ -180,19 +184,19 @@ borderCollisionDetect input app =
       }
     , Effects.none)
 
-collisionDetect : Signal.Address (List Action) -> (App, List (Effects Action)) -> (App, List (Effects Action))
-collisionDetect inboxAddress (app, effects) =
+collisionDetect : Signal.Address (List Action) -> App -> App
+collisionDetect inboxAddress (appState, effects) =
   let
-    newEffects = Collision.squaredUpdate (Collision.interact inboxAddress) app.entities
+    newEffects = Collision.squaredUpdate (Collision.interact inboxAddress) appState.entities
   in
-    (app, newEffects)
+    (appState, newEffects)
 
-updateApp : Input -> (App, List (Effects Action)) -> (App, List (Effects Action))
-updateApp input (app, effects) =
+updateApp : Input -> App -> App
+updateApp input (appState, effects) =
   let
-    newEntities = List.map (controlEntity input >> simulateEntity input) app.entities
+    newEntities = List.map (controlEntity input >> simulateEntity input) appState.entities
   in
-    ({ app | entities = newEntities } , effects)
+    ({ appState | entities = newEntities } , effects)
 
 controlEntity : Input -> Entity -> Entity
 controlEntity input entity =
@@ -211,7 +215,7 @@ simulateEntity input entity =
 
 ---------------- View methods
 
-view : (Int, Int) -> App -> Element
+view : (Int, Int) -> AppState -> Element
 view (width, height) app =
   collage width height
   <| List.map viewEntity app.entities
@@ -246,23 +250,23 @@ actionInputSignal : Signal (Input, List Action)
 actionInputSignal =
   Signal.map2 (\input actions -> (input, actions)) inputSignal actionInbox.signal
 
-stateChangeSignal : Signal (App, List (Effects Action))
-stateChangeSignal =
-  Signal.foldp (update actionInbox.address) (initApp, []) actionInputSignal
-
 appSignal : Signal App
 appSignal =
-  Signal.map fst stateChangeSignal
+  Signal.foldp (update actionInbox.address) (initApp, []) actionInputSignal
+
+stateSignal : Signal AppState
+stateSignal =
+  Signal.map fst appSignal
 
 effectSignal : Signal (List (Effects Action))
 effectSignal =
-  Signal.map snd stateChangeSignal
+  Signal.map snd appSignal
 
 ------------- Main functions
 
 main : Signal Element
 main =
-  Signal.map2 view Window.dimensions appSignal
+  Signal.map2 view Window.dimensions stateSignal
 
 port tasks : Signal (Task Effects.Never ())
 port tasks =
