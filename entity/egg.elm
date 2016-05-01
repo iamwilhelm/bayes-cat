@@ -20,10 +20,6 @@ create pos vel = {
       group [
         filled corp.color <| circle ((fst corp.dim) / 2)
       ]
-  , interactions = [
-      (Entity.Egg, Entity.Egg)
-    , (Entity.Egg, Entity.Cursor)
-    ]
   , label = { name = "Egg", color = Color.black }
   }
 

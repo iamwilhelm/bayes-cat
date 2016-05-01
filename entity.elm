@@ -13,9 +13,7 @@ import Task exposing (Task)
 
 import Debug
 
-type Role = Cursor | Turtle | Labeler | Egg
-
-type alias Interaction = (Role, Role)
+type Role = Cursor | Turtle | Labeler | Egg | Viewport
 
 type alias Entity =
   { role: Role
@@ -23,7 +21,6 @@ type alias Entity =
   , corp: Corporeal
   , control: Control
   , view: View
-  , interactions: List Interaction
   , label: Label
   }
 

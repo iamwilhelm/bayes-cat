@@ -42,7 +42,6 @@ initCursor = {
   , corp = Component.createCorporeal (15, 15) Color.darkGray
   , control = \input space -> Component.setPos input.mouse space
   , view = \corp -> filled corp.color <| ngon 3 (fst corp.dim)
-  , interactions = []
   , label = { name = "Cursor", color = Color.black }
   }
 
@@ -57,11 +56,6 @@ createTurtle pos = {
       group [
         filled corp.color <| circle ((fst corp.dim) / 2)
       ]
-  , interactions = [
-      (Entity.Turtle, Entity.Labeler)
-    , (Entity.Turtle, Entity.Turtle)
-    , (Entity.Turtle, Entity.Cursor)
-    ]
   , label = { name = "Turtle", color = Color.black }
   }
 
@@ -75,7 +69,6 @@ bombLabeler = {
       group [
         filled corp.color <| (uncurry rect) corp.dim
       ]
-  , interactions = [(Entity.Labeler, Entity.Turtle)]
   , label = createLabel "Bomb" Color.black
   }
 
@@ -89,7 +82,6 @@ tickingLabeler = {
       group [
         filled corp.color <| (uncurry rect) corp.dim
       ]
-  , interactions = [(Entity.Labeler, Entity.Turtle)]
   , label = createLabel "Ticking" Color.black
   }
 
@@ -103,7 +95,6 @@ notTickingLabeler = {
       group [
         filled corp.color <| (uncurry rect) corp.dim
       ]
-  , interactions = [(Entity.Labeler, Entity.Turtle)]
   , label = createLabel "Not Ticking" Color.black
   }
 
