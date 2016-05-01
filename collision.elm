@@ -11,14 +11,21 @@ import Action exposing (Action, EntityAction)
 
 type alias Range = (Float, Float)
 
-between : Range -> Range -> Bool
-between (minA, maxA) (minB, maxB) =
+overlap : Range -> Range -> Bool
+overlap (minA, maxA) (minB, maxB) =
   if (minA < minB && minA < maxB) && (maxA < minB && maxA < maxB) then
     False
   else if (minA > minB && minA > maxB) && (maxA > minB && maxA > maxB) then
     False
   else
     True
+
+withinRange : Range -> Range -> Bool
+withinRange (minA, maxA) (minB, maxB) =
+  if (minA > minB && minA < maxB) && (maxA > minB && maxA < maxB) then
+    True
+  else
+    False
 
 inside : Entity -> Entity -> Bool
 inside self othr =
@@ -28,11 +35,17 @@ inside self othr =
     othrMin = othr.space.pos |- othr.corp.dim ./ 2
     othrMax = othr.space.pos |+ othr.corp.dim ./ 2
   in
-    if between (Vec.x selfMin, Vec.x selfMax) (Vec.x othrMin, Vec.x othrMax)
-      && between (Vec.y selfMin, Vec.y selfMax) (Vec.y othrMin, Vec.y othrMax) then
-      True
-    else
-      False
+    overlap (Vec.x selfMin, Vec.x selfMax) (Vec.x othrMin, Vec.x othrMax)
+    && overlap (Vec.y selfMin, Vec.y selfMax) (Vec.y othrMin, Vec.y othrMax)
+
+withinBounds : (Float, Float, Float, Float) -> Entity -> Bool
+withinBounds (top, right, bottom, left) self =
+  let
+    selfMin = self.space.pos |- self.corp.dim ./ 2
+    selfMax = self.space.pos |+ self.corp.dim ./ 2
+  in
+    withinRange (Vec.x selfMin, Vec.x selfMax) (left, right)
+    && withinRange (Vec.y selfMin, Vec.y selfMax) (bottom, top)
 
 collide : Entity -> Entity -> Entity
 collide self other =

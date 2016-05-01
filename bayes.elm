@@ -122,8 +122,8 @@ initApp = {
 update : Signal.Address (List Action) -> (Input, List Action) -> App -> App
 update inboxAddress (input, actions) (app, _) =
   ({ app | entities = List.foldl actionateEntities app.entities actions } , [])
-  -- sourceTurtles input app
-  -- borderCollisionDetect input app
+  -- sourceTurtles input
+  |> borderCollisionDetect input
   |> collisionDetect inboxAddress
   |> updateApp input
 
@@ -152,19 +152,29 @@ sourceTurtles input app =
     ({ app | entities = updatedEntities , seed = newSeed0 }
     , Effects.none)
 
-borderCollisionDetect : Input -> AppState -> (AppState, Effects Action)
-borderCollisionDetect input app =
+borderCollisionDetect : Input -> App -> App
+borderCollisionDetect input (appState, effects) =
   let
-    withinBounds entity =
-      Vec.x entity.space.pos > -(toFloat <| fst input.window) / 2
-      && Vec.x entity.space.pos < (toFloat <| fst input.window) / 2
-      && Vec.y entity.space.pos > -(toFloat <| snd input.window) / 2
-      && Vec.y entity.space.pos < (toFloat <| snd input.window) / 2
+    top = (toFloat <| snd input.window) / 2
+    bottom = -(toFloat <| snd input.window) / 2
+    left = -(toFloat <| fst input.window) / 2
+    right = (toFloat <| fst input.window) / 2
   in
-    ({ app |
-        entities = List.filter (withinBounds) app.entities
-      }
-    , Effects.none)
+    ({ appState |
+      entities = List.filter (\entity ->
+        borderCollisionExemptions entity
+        || Collision.withinBounds (top, right, bottom, left) entity
+      ) appState.entities
+     }
+    , effects)
+
+borderCollisionExemptions : Entity -> Bool
+borderCollisionExemptions entity =
+  case entity.role of
+    Entity.Cursor ->
+      True
+    _ ->
+      False
 
 collisionDetect : Signal.Address (List Action) -> App -> App
 collisionDetect inboxAddress (appState, effects) =
