@@ -164,7 +164,6 @@ sourceTurtles input app =
 borderCollisionDetect : Input -> AppState -> (AppState, Effects Action)
 borderCollisionDetect input app =
   let
-    -- NOTE refactor. very similary to inside()
     withinBounds entity =
       Vec.x entity.space.pos > -(toFloat <| fst input.window) / 2
       && Vec.x entity.space.pos < (toFloat <| fst input.window) / 2
@@ -186,35 +185,17 @@ collisionDetect inboxAddress (appState, effects) =
 updateApp : Input -> App -> App
 updateApp input (appState, effects) =
   let
-    newEntities = List.map (controlEntity input >> simulateEntity input) appState.entities
+    newEntities = List.map (Entity.control input >> Entity.simulate input) appState.entities
   in
     ({ appState | entities = newEntities } , effects)
 
-controlEntity : Input -> Entity -> Entity
-controlEntity input entity =
-  { entity |
-    space = entity.control input entity.space
-  }
-
-simulateEntity : Input -> Entity -> Entity
-simulateEntity input entity =
-  { entity |
-    space =
-      entity.space |>
-      Component.setVel (entity.space.vel |+ entity.space.acc .* input.delta)
-      >> Component.setPos (entity.space.pos |+ entity.space.vel .* input.delta)
-  }
 
 ---------------- View methods
 
 view : (Int, Int) -> AppState -> Element
 view (width, height) app =
   collage width height
-  <| List.map viewEntity app.entities
-
-viewEntity : Entity -> Form
-viewEntity entity =
-  move entity.space.pos <| entity.view entity.corp
+  <| List.map Entity.view app.entities
 
 -------------- Input methods
 
