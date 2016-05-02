@@ -9,6 +9,7 @@ import Color exposing (Color)
 import Signal
 import Action exposing (Action, EggAction)
 import Vec exposing (..)
+import Random
 
 create : Vec -> Vec -> Entity
 create pos vel = {

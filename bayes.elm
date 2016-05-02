@@ -19,6 +19,7 @@ import Random
 import Entity exposing (Entity)
 import Component
 import Collision
+import Viewport
 import Vec exposing (..)
 import Action exposing (Action, EntityAction)
 
@@ -109,8 +110,7 @@ type alias App = (AppState, List (Effects Action))
 initApp : AppState
 initApp = {
     entities = [
-      Entity.Egg.create (0, 300) (0, 0)
-    , initCursor
+      initCursor
     ]
   , seed = Random.initialSeed 0
   }
@@ -120,12 +120,15 @@ initApp = {
 
 -- e -> acc -> acc
 update : Signal.Address (List Action) -> (Input, List Action) -> App -> App
-update inboxAddress (input, actions) (app, _) =
-  ({ app | entities = List.foldl actionateEntities app.entities actions } , [])
-  -- sourceTurtles input
-  |> borderCollisionDetect input
-  |> collisionDetect inboxAddress
-  |> updateApp input
+update inboxAddress (input, actions) (appState, _) =
+  let
+    _ = Debug.log "entities: " <| List.length appState.entities
+  in
+    ({ appState | entities = List.foldl actionateEntities appState.entities actions } , [])
+    |> generateEggs input
+    |> withinViewport input
+    |> collisionDetect inboxAddress
+    |> updateApp input
 
 -- Execute actions that were triggered by effects
 actionateEntities : Action -> List Entity -> List Entity
@@ -138,43 +141,24 @@ actionateEntities action entities =
     Action.Egg eggAction ->
       List.map (Entity.Egg.actionate eggAction) entities
 
-sourceTurtles : Input -> AppState -> (AppState, Effects Action)
-sourceTurtles input app =
+generateEggs : Input -> App -> App
+generateEggs input (appState, effects) =
   let
-    (shouldCreate, newSeed1) = Random.generate Random.bool app.seed
+    (shouldCreate, newSeed1) = Random.generate Random.bool appState.seed
     (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
     updatedEntities =
-      if List.length app.entities < 60 && shouldCreate == True then
-        Entity.Egg.create (xPos, 300) (0, -300) :: app.entities
+      if List.length appState.entities < 60 && shouldCreate == True then
+        Entity.Egg.create (xPos, 300) (0, -300) :: appState.entities
       else
-        app.entities
+        appState.entities
   in
-    ({ app | entities = updatedEntities , seed = newSeed0 }
-    , Effects.none)
-
-borderCollisionDetect : Input -> App -> App
-borderCollisionDetect input (appState, effects) =
-  let
-    top = (toFloat <| snd input.window) / 2
-    bottom = -(toFloat <| snd input.window) / 2
-    left = -(toFloat <| fst input.window) / 2
-    right = (toFloat <| fst input.window) / 2
-  in
-    ({ appState |
-      entities = List.filter (\entity ->
-        borderCollisionExemptions entity
-        || Collision.withinBounds (top, right, bottom, left) entity
-      ) appState.entities
-     }
+    ({ appState | entities = updatedEntities , seed = newSeed0 }
     , effects)
 
-borderCollisionExemptions : Entity -> Bool
-borderCollisionExemptions entity =
-  case entity.role of
-    Entity.Cursor ->
-      True
-    _ ->
-      False
+withinViewport : Input -> App -> App
+withinViewport input (appState, effects) =
+    ({ appState | entities = Viewport.cull input appState.entities }
+    , effects)
 
 collisionDetect : Signal.Address (List Action) -> App -> App
 collisionDetect inboxAddress (appState, effects) =
@@ -189,7 +173,6 @@ updateApp input (appState, effects) =
     newEntities = List.map (Entity.control input >> Entity.simulate input) appState.entities
   in
     ({ appState | entities = newEntities } , effects)
-
 
 ---------------- View methods
 
@@ -245,9 +228,5 @@ main =
 port tasks : Signal (Task Effects.Never ())
 port tasks =
   Signal.map (\effects ->
-    let
-      _ = Debug.log "effects" effects
-      --Effects.toTask actionInbox.address <| Effects.batch effects
-    in
-      Effects.toTask actionInbox.address <| Maybe.withDefault Effects.none <| List.head effects
+    Effects.toTask actionInbox.address <| Maybe.withDefault Effects.none <| List.head effects
   ) effectSignal
