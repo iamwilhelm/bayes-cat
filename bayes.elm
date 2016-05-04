@@ -155,7 +155,7 @@ generateEggs input (appState, effects) =
     (shouldCreate, newSeed1) = Random.generate Random.bool appState.seed
     (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
     updatedEntities =
-      if List.length appState.entities < 3 && shouldCreate == True then
+      if List.length appState.entities < 5 && shouldCreate == True then
         Entity.Egg.create (xPos, 300) (0, -300) :: appState.entities
       else
         appState.entities
@@ -213,7 +213,7 @@ actionInbox =
 
 actionInputSignal : Signal (Input, List Action)
 actionInputSignal =
-  Signal.map2 (\input actions -> (input, actions)) inputSignal actionInbox.signal
+  Signal.map2 (\input actions -> (input, actions)) inputSignal (Signal.sampleOn delta actionInbox.signal)
 
 appSignal : Signal App
 appSignal =
