@@ -122,13 +122,21 @@ initApp = {
 update : Signal.Address (List Action) -> (Input, List Action) -> App -> App
 update inboxAddress (input, actions) (appState, _) =
   let
-    _ = Debug.log "entities: " <| List.length appState.entities
+    _ = 3 --Debug.log "entities: " <| List.length appState.entities
+    asdf = 4 --Debug.log "actions: " actions
   in
     ({ appState | entities = List.foldl actionateEntities appState.entities actions } , [])
     |> generateEggs input
     |> withinViewport input
     |> collisionDetect inboxAddress
     |> updateApp input
+
+debugEffects : App -> App
+debugEffects (appState, effects) =
+  let
+    _ = Debug.log "effects: " <| effects
+  in
+    (appState, effects)
 
 -- Execute actions that were triggered by effects
 actionateEntities : Action -> List Entity -> List Entity
@@ -147,7 +155,7 @@ generateEggs input (appState, effects) =
     (shouldCreate, newSeed1) = Random.generate Random.bool appState.seed
     (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
     updatedEntities =
-      if List.length appState.entities < 60 && shouldCreate == True then
+      if List.length appState.entities < 3 && shouldCreate == True then
         Entity.Egg.create (xPos, 300) (0, -300) :: appState.entities
       else
         appState.entities
@@ -228,5 +236,8 @@ main =
 port tasks : Signal (Task Effects.Never ())
 port tasks =
   Signal.map (\effects ->
-    Effects.toTask actionInbox.address <| Maybe.withDefault Effects.none <| List.head effects
+    let
+      _ = Debug.log "port effects" effects
+    in
+      Effects.toTask actionInbox.address <| Effects.batch effects
   ) effectSignal

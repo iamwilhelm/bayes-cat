@@ -56,11 +56,14 @@ collide self other =
 interact : Signal.Address (List Action) -> Entity -> Entity -> Effects Action
 interact address self other =
   if inside self other then
-    case (self.role, other.role) of
-      (Egg, Cursor) ->
-        Effects.task <| Task.succeed (Action.Entity Action.Open)
-      _ ->
-        Effects.none
+    let
+      _ = Debug.log "self vs other" (self.role, other.role)
+    in
+      case (self.role, other.role) of
+        (Cursor, Egg) ->
+          Effects.task <| Task.succeed (Action.Entity Action.Open)
+        _ ->
+          Effects.none
   else
     Effects.none
 
