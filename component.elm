@@ -79,3 +79,16 @@ type alias Control = Input.Input -> Spatial -> Spatial
 ---------- CorporealView Component
 
 type alias View = Corporeal -> Form
+
+---------- Label Component
+
+type alias Label = {
+    name : String
+  , color : Color.Color
+  }
+
+createLabel : String -> Color.Color -> Label
+createLabel name color = {
+    name = name
+  , color = color
+  }

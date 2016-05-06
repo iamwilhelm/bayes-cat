@@ -1,13 +1,15 @@
 module Collision where
 
 import Entity exposing (..)
+import Entity.Egg exposing (Egg)
 import Component
 import Vec exposing (..)
 
 import Signal
 import Task
 import Effects exposing (Effects)
-import Action exposing (Action, EntityAction)
+import Action exposing (Action)
+import Role
 
 type alias Range = (Float, Float)
 
@@ -60,8 +62,8 @@ interact address self other =
       _ = Debug.log "self vs other" (self.role, other.role)
     in
       case (self.role, other.role) of
-        (Cursor, Egg) ->
-          Effects.task <| Task.succeed (Action.Entity Action.Open)
+        (Role.Cursor, Role.Egg) ->
+          Effects.task <| Task.succeed (Action.Egg Entity.Egg.Open)
         _ ->
           Effects.none
   else

@@ -1,19 +1,28 @@
 module Entity.Egg where
 
-import Entity exposing (Entity)
-import Component exposing (Spatial, Corporeal, Control, View)
-
 import Graphics.Collage exposing (..)
 import Color exposing (Color)
-
 import Signal
-import Action exposing (Action, EggAction)
-import Vec exposing (..)
 import Random
 
-create : Vec -> Vec -> Entity
+import Vec exposing (..)
+import Role
+import Component exposing (Spatial, Corporeal, Control, View, Label)
+
+type Action = Open | Kick
+
+type alias Egg =
+  { role: Role.Role
+  , space: Spatial
+  , corp: Corporeal
+  , control: Control
+  , view: View
+  , label: Label
+  }
+
+create : Vec -> Vec -> Egg
 create pos vel = {
-    role = Entity.Egg
+    role = Role.Egg
   , space = Component.createSpatial pos vel (0, 0)
   , corp = Component.createCorporeal (35, 35) Color.gray
   , control = \input space -> space
@@ -24,10 +33,10 @@ create pos vel = {
   , label = { name = "Egg", color = Color.black }
   }
 
-actionate : EggAction -> Entity -> Entity
-actionate action entity =
+reduce : Action -> Egg -> Egg
+reduce action entity =
   case action of
-    Action.Boom ->
-      { entity | corp = Component.setColor Color.blue entity.corp }
-    Action.Whoa ->
+    Open ->
       { entity | corp = Component.setColor Color.orange entity.corp }
+    Kick ->
+      { entity | corp = Component.setColor Color.blue entity.corp }

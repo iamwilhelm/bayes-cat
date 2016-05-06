@@ -1,5 +1,6 @@
 module Viewport where
 
+import Role
 import Collision
 import Entity exposing (Entity)
 import Input exposing (Input)
@@ -20,7 +21,7 @@ cull input entities =
 exemptions : Entity -> Bool
 exemptions entity =
   case entity.role of
-    Entity.Cursor ->
+    Role.Cursor ->
       True
     _ ->
       False

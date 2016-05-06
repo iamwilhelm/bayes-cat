@@ -2,21 +2,21 @@ module Entity where
 
 import Graphics.Collage exposing (..)
 import Color exposing (Color)
-import Component exposing (Spatial, Corporeal, Control, View)
+import Component exposing (Spatial, Corporeal, Control, View, Label)
 import Vec exposing (..)
 import Input exposing (Input)
 
 import Signal
-import Action exposing (Action, EntityAction)
 import Effects exposing (Effects)
 import Task exposing (Task)
 
+import Action exposing (Action)
+import Role
+
 import Debug
 
-type Role = Cursor | Turtle | Labeler | Egg | Viewport
-
 type alias Entity =
-  { role: Role
+  { role: Role.Role
   , space: Spatial
   , corp: Corporeal
   , control: Control
@@ -24,20 +24,7 @@ type alias Entity =
   , label: Label
   }
 
-type alias Label = {
-    name : String
-  , color : Color
-  }
-
 -- update
-
-actionate : EntityAction -> Entity -> Entity
-actionate action entity =
-  case action of
-    Action.Open ->
-      { entity | corp = Component.setColor Color.blue entity.corp }
-    Action.Explode ->
-      { entity | corp = Component.setColor Color.orange entity.corp }
 
 control : Input -> Entity -> Entity
 control input entity =

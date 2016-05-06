@@ -1,10 +1,7 @@
 module Action where
 
+import Entity.Egg
+
 type Action =
     NoOp
-  | Entity EntityAction
-  | Egg EggAction
-
-type EntityAction = Open | Explode
-
-type EggAction = Boom | Whoa
+  | Egg Entity.Egg.Action

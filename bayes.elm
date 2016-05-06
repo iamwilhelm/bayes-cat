@@ -16,29 +16,24 @@ import Html.Attributes exposing (..)
 import List
 import Random
 
-import Entity exposing (Entity)
-import Component
 import Collision
 import Viewport
 import Vec exposing (..)
-import Action exposing (Action, EntityAction)
+import Action exposing (Action)
+import Role
+import Entity exposing (Entity)
+import Component
+
+import Entity.Egg
 
 
 import Debug
 
 -------------- Model methods
 
-import Entity.Egg
-
-createLabel : String -> Color -> Entity.Label
-createLabel name colour = {
-    name = name
-  , color = colour
-  }
-
 initCursor : Entity
 initCursor = {
-    role = Entity.Cursor
+    role = Role.Cursor
   , space = Component.createSpatial (0, 0) (0, 0) (0, 0)
   , corp = Component.createCorporeal (15, 15) Color.darkGray
   , control = \input space -> Component.setPos input.mouse space
@@ -48,7 +43,7 @@ initCursor = {
 
 createTurtle : Vec.Vec -> Entity
 createTurtle pos = {
-    role = Entity.Turtle
+    role = Role.Turtle
   , space = Component.createSpatial pos (0, -300) (0, 0)
   , corp = Component.createCorporeal (30, 30) Color.green
   , control = \input space ->
@@ -62,7 +57,7 @@ createTurtle pos = {
 
 bombLabeler : Entity
 bombLabeler = {
-    role = Entity.Labeler
+    role = Role.Labeler
   , space = Component.createSpatial (0, 250) (0, 0) (0, 0)
   , corp = Component.createCorporeal (400, 20) Color.lightRed
   , control = \input space -> space
@@ -70,35 +65,8 @@ bombLabeler = {
       group [
         filled corp.color <| (uncurry rect) corp.dim
       ]
-  , label = createLabel "Bomb" Color.black
+  , label = Component.createLabel "Bomb" Color.black
   }
-
-tickingLabeler : Entity
-tickingLabeler = {
-    role = Entity.Labeler
-  , space = Component.createSpatial (-400 / 2 + 300 / 2, 50) (0, 0) (0, 0)
-  , corp = Component.createCorporeal (300, 20) Color.lightPurple
-  , control = \input space -> space
-  , view = \corp ->
-      group [
-        filled corp.color <| (uncurry rect) corp.dim
-      ]
-  , label = createLabel "Ticking" Color.black
-  }
-
-notTickingLabeler : Entity
-notTickingLabeler = {
-    role = Entity.Labeler
-  , space = Component.createSpatial (400 / 2 - 100 / 2, 50) (0, 0) (0, 0)
-  , corp = Component.createCorporeal (100, 20) Color.lightGreen
-  , control = \input space -> space
-  , view = \corp ->
-      group [
-        filled corp.color <| (uncurry rect) corp.dim
-      ]
-  , label = createLabel "Not Ticking" Color.black
-  }
-
 
 type alias AppState =
   { entities: List Entity
@@ -125,11 +93,27 @@ update inboxAddress (input, actions) (appState, _) =
     _ = 3 --Debug.log "entities: " <| List.length appState.entities
     asdf = 4 --Debug.log "actions: " actions
   in
-    ({ appState | entities = List.foldl actionateEntities appState.entities actions } , [])
+    ({ appState | entities = List.foldl reduce appState.entities actions } , [])
     |> generateEggs input
     |> withinViewport input
     |> collisionDetect inboxAddress
     |> updateApp input
+
+-- Execute actions that were triggered by effects
+
+
+reduce : Action -> List Entity -> List Entity
+reduce action entities =
+  case action of
+    Action.NoOp ->
+      entities
+    Action.Egg eggAction ->
+      List.map (\entity ->
+        if entity.role == Role.Egg then
+          Entity.Egg.reduce eggAction entity
+        else
+          entity
+      ) entities
 
 debugEffects : App -> App
 debugEffects (appState, effects) =
@@ -137,17 +121,6 @@ debugEffects (appState, effects) =
     _ = Debug.log "effects: " <| effects
   in
     (appState, effects)
-
--- Execute actions that were triggered by effects
-actionateEntities : Action -> List Entity -> List Entity
-actionateEntities action entities =
-  case action of
-    Action.NoOp ->
-      entities
-    Action.Entity entityAction ->
-      List.map (Entity.actionate entityAction) entities
-    Action.Egg eggAction ->
-      List.map (Entity.Egg.actionate eggAction) entities
 
 generateEggs : Input -> App -> App
 generateEggs input (appState, effects) =
@@ -213,7 +186,9 @@ actionInbox =
 
 actionInputSignal : Signal (Input, List Action)
 actionInputSignal =
-  Signal.map2 (\input actions -> (input, actions)) inputSignal (Signal.sampleOn delta actionInbox.signal)
+  Signal.map2 (\input actions -> (input, actions))
+    inputSignal
+    (Signal.sampleOn delta actionInbox.signal)
 
 appSignal : Signal App
 appSignal =
@@ -237,7 +212,7 @@ port tasks : Signal (Task Effects.Never ())
 port tasks =
   Signal.map (\effects ->
     let
-      _ = Debug.log "port effects" effects
+      _ = Debug.log "port effects" <| Effects.batch effects
     in
       Effects.toTask actionInbox.address <| Effects.batch effects
   ) effectSignal
