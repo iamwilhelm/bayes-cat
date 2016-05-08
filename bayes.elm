@@ -31,33 +31,6 @@ import Debug
 
 -------------- Model methods
 
-createTurtle : Vec.Vec -> Entity
-createTurtle pos = {
-    role = Role.Turtle
-  , space = Component.createSpatial pos (0, -300) (0, 0)
-  , corp = Component.createCorporeal (30, 30) Color.green
-  , control = \input space ->
-      space
-  , view = \corp ->
-      group [
-        filled corp.color <| circle ((fst corp.dim) / 2)
-      ]
-  , label = { name = "Turtle", color = Color.black }
-  }
-
-bombLabeler : Entity
-bombLabeler = {
-    role = Role.Labeler
-  , space = Component.createSpatial (0, 250) (0, 0) (0, 0)
-  , corp = Component.createCorporeal (400, 20) Color.lightRed
-  , control = \input space -> space
-  , view = \corp ->
-      group [
-        filled corp.color <| (uncurry rect) corp.dim
-      ]
-  , label = Component.createLabel "Bomb" Color.black
-  }
-
 type alias AppState =
   { entities: List Entity
   , seed: Random.Seed
