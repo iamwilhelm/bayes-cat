@@ -34,9 +34,9 @@ create pos vel = {
   }
 
 reduce : Action -> Egg -> Egg
-reduce action entity =
+reduce action egg =
   case action of
     Open ->
-      { entity | corp = Component.setColor Color.orange entity.corp }
+      { egg | corp = Component.setColor Color.orange egg.corp }
     Kick ->
-      { entity | corp = Component.setColor Color.blue entity.corp }
+      { egg | corp = Component.setColor Color.blue egg.corp }

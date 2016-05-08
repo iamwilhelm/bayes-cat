@@ -62,7 +62,7 @@ interact address self other =
       _ = Debug.log "self vs other" (self.role, other.role)
     in
       case (self.role, other.role) of
-        (Role.Cursor, Role.Egg) ->
+        (Role.Pointer, Role.Egg) ->
           Effects.task <| Task.succeed (Action.Egg Entity.Egg.Open)
         _ ->
           Effects.none

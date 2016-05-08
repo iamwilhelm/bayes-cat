@@ -21,7 +21,7 @@ cull input entities =
 exemptions : Entity -> Bool
 exemptions entity =
   case entity.role of
-    Role.Cursor ->
+    Role.Pointer ->
       True
     _ ->
       False

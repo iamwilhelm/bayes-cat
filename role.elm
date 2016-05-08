@@ -1,3 +1,3 @@
 module Role where
 
-type Role = Cursor | Turtle | Labeler | Egg | Viewport
+type Role = Pointer | Turtle | Labeler | Egg | Viewport

@@ -25,21 +25,11 @@ import Entity exposing (Entity)
 import Component
 
 import Entity.Egg
-
+import Entity.Pointer
 
 import Debug
 
 -------------- Model methods
-
-initCursor : Entity
-initCursor = {
-    role = Role.Cursor
-  , space = Component.createSpatial (0, 0) (0, 0) (0, 0)
-  , corp = Component.createCorporeal (15, 15) Color.darkGray
-  , control = \input space -> Component.setPos input.mouse space
-  , view = \corp -> filled corp.color <| ngon 3 (fst corp.dim)
-  , label = { name = "Cursor", color = Color.black }
-  }
 
 createTurtle : Vec.Vec -> Entity
 createTurtle pos = {
@@ -78,7 +68,7 @@ type alias App = (AppState, List (Effects Action))
 initApp : AppState
 initApp = {
     entities = [
-      initCursor
+      Entity.Pointer.init
     ]
   , seed = Random.initialSeed 0
   }
@@ -100,7 +90,6 @@ update inboxAddress (input, actions) (appState, _) =
     |> updateApp input
 
 -- Execute actions that were triggered by effects
-
 
 reduce : Action -> List Entity -> List Entity
 reduce action entities =
