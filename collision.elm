@@ -1,6 +1,7 @@
 module Collision where
 
 import Entity exposing (..)
+import Entity.EntityList
 import Entity.Egg exposing (Egg)
 import Component
 import Vec exposing (..)
@@ -63,7 +64,8 @@ interact address self other =
     in
       case (self.role, other.role) of
         (Role.Pointer, Role.Egg) ->
-          Effects.task <| Task.succeed (Action.Egg Entity.Egg.Open)
+          Effects.task
+          <| Task.succeed (Action.Egg Entity.Egg.Open)
         _ ->
           Effects.none
   else
@@ -71,9 +73,10 @@ interact address self other =
 
 ------------- pairing algorithms
 
-squaredUpdate : (Entity -> Entity -> Effects Action) -> List Entity -> List (Effects Action)
-squaredUpdate interactionCallback entities =
+squaredUpdate : (Entity -> Entity -> Effects Action) -> Entity.EntityList.Model -> List (Effects Action)
+squaredUpdate interactionCallback model =
   let
+    entities = List.map (\(_, entity) -> entity) model.entities
     everyOtherEntities index entities =
       List.append (List.take index entities) (List.drop (index + 1) entities)
 

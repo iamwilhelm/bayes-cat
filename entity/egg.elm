@@ -9,7 +9,10 @@ import Vec exposing (..)
 import Role
 import Component exposing (Spatial, Corporeal, Control, View, Label)
 
-type Action = Open | Kick
+type Action = Open
+  | Kick
+
+type State = IsClose | IsOpen
 
 type alias Egg =
   { role: Role.Role

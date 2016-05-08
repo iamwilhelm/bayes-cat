@@ -24,6 +24,7 @@ import Role
 import Entity exposing (Entity)
 import Component
 
+import Entity.EntityList
 import Entity.Egg
 import Entity.Pointer
 
@@ -32,20 +33,19 @@ import Debug
 -------------- Model methods
 
 type alias AppState =
-  { entities: List Entity
-  , seed: Random.Seed
+  { entities : Entity.EntityList.Model
+  , nextEntityId : Int
+  , seed : Random.Seed
   }
 
 type alias App = (AppState, List (Effects Action))
 
 initApp : AppState
 initApp = {
-    entities = [
-      Entity.Pointer.init
-    ]
+    entities = Entity.EntityList.init
+  , nextEntityId = 0
   , seed = Random.initialSeed 0
   }
-
 
 -------------- Update methods
 
@@ -56,7 +56,7 @@ update inboxAddress (input, actions) (appState, _) =
     _ = 3 --Debug.log "entities: " <| List.length appState.entities
     asdf = 4 --Debug.log "actions: " actions
   in
-    ({ appState | entities = List.foldl reduce appState.entities actions } , [])
+    reduceAppState appState actions
     |> generateEggs input
     |> withinViewport input
     |> collisionDetect inboxAddress
@@ -64,18 +64,21 @@ update inboxAddress (input, actions) (appState, _) =
 
 -- Execute actions that were triggered by effects
 
-reduce : Action -> List Entity -> List Entity
+reduceAppState : AppState -> (List Action) -> App
+reduceAppState appState actions =
+  ({ appState |
+    entities = List.foldl reduce appState.entities actions
+  }, [])
+
+reduce : Action -> Entity.EntityList.Model -> Entity.EntityList.Model
 reduce action entities =
   case action of
     Action.NoOp ->
       entities
     Action.Egg eggAction ->
-      List.map (\entity ->
-        if entity.role == Role.Egg then
-          Entity.Egg.reduce eggAction entity
-        else
-          entity
-      ) entities
+      entities
+    Action.EntityList entityListAction ->
+      Entity.EntityList.reduce entityListAction entities
 
 debugEffects : App -> App
 debugEffects (appState, effects) =
@@ -87,20 +90,16 @@ debugEffects (appState, effects) =
 generateEggs : Input -> App -> App
 generateEggs input (appState, effects) =
   let
-    (shouldCreate, newSeed1) = Random.generate Random.bool appState.seed
-    (xPos, newSeed0) = Random.generate (Random.float -300 300) newSeed1
-    updatedEntities =
-      if List.length appState.entities < 5 && shouldCreate == True then
-        Entity.Egg.create (xPos, 300) (0, -300) :: appState.entities
-      else
-        appState.entities
+    newEffect = Effects.task
+    <| Task.succeed (Action.EntityList Entity.EntityList.Insert)
   in
-    ({ appState | entities = updatedEntities , seed = newSeed0 }
-    , effects)
+    (appState, newEffect :: effects)
 
 withinViewport : Input -> App -> App
 withinViewport input (appState, effects) =
-    ({ appState | entities = Viewport.cull input appState.entities }
+    ({ appState |
+       entities = Viewport.cull input appState.entities
+     }
     , effects)
 
 collisionDetect : Signal.Address (List Action) -> App -> App
@@ -108,21 +107,21 @@ collisionDetect inboxAddress (appState, effects) =
   let
     newEffects = Collision.squaredUpdate (Collision.interact inboxAddress) appState.entities
   in
-    (appState, newEffects)
+    (appState, List.append newEffects effects)
 
 updateApp : Input -> App -> App
 updateApp input (appState, effects) =
-  let
-    newEntities = List.map (Entity.control input >> Entity.simulate input) appState.entities
-  in
-    ({ appState | entities = newEntities } , effects)
+  ({ appState |
+    entities =
+      Entity.EntityList.map (Entity.control input >> Entity.simulate input) appState.entities
+  } , effects)
 
 ---------------- View methods
 
 view : (Int, Int) -> AppState -> Element
 view (width, height) app =
   collage width height
-  <| List.map Entity.view app.entities
+  <| List.map Entity.view <| List.map snd <| app.entities.entities
 
 -------------- Input methods
 
