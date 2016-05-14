@@ -2,10 +2,11 @@ import Window
 import AnimationFrame
 import Mouse
 import Random
+import Task
 
 import Time exposing (Time)
 
-import Collage exposing (..)
+import Collage
 import Element exposing (..)
 import Color exposing (Color)
 import Text
@@ -46,7 +47,8 @@ init =
     , seed = Random.initialSeed 0
     , size = Window.Size 0 0
     }
-  , Cmd.none)
+  , Task.perform (\_ -> NoOp) SizeChange Window.size
+  )
 
 -------------- Update methods
 
@@ -138,9 +140,12 @@ view model =
     (w', h') = (model.size.width, model.size.height)
     (w, h) = (toFloat w', toFloat h')
   in
-    toHtml
-    <| collage w' h'
-    <| List.filterMap Entity.view model.entities
+    div []
+    [
+      toHtml
+      <| Collage.collage w' h'
+      <| List.filterMap Entity.view model.entities
+    ]
 
 
 ---------------- Input methods

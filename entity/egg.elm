@@ -8,6 +8,8 @@ import Entity
 import Input
 import Vec exposing (..)
 
+import Debug
+
 -- model
 
 init : Entity.ID -> Entity.Model
