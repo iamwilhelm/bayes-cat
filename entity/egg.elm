@@ -1,45 +1,50 @@
-module Entity.Egg where
+module Entity.Egg exposing (..)
 
-import Graphics.Collage exposing (..)
-import Color exposing (Color)
-import Signal
+import Collage exposing (..)
 import Random
+import Color
 
+import Entity
+import Input
 import Vec exposing (..)
-import Role
-import Component exposing (Spatial, Corporeal, Control, View, Label)
 
-type Action = Open
+-- model
+
+init : Entity.ID -> Entity.Model
+init id = {
+    id = id
+  , components = [
+      Entity.spatial (0, 0) (0, 0) (0, 0)
+    , Entity.corporeal (35, 35) Color.gray
+    , Entity.viewable view
+    ]
+  }
+
+-- update
+
+type Msg =
+    Open
   | Kick
 
-type State = IsClose | IsOpen
-
-type alias Egg =
-  { role: Role.Role
-  , space: Spatial
-  , corp: Corporeal
-  , control: Control
-  , view: View
-  , label: Label
-  }
-
-create : Vec -> Vec -> Egg
-create pos vel = {
-    role = Role.Egg
-  , space = Component.createSpatial pos vel (0, 0)
-  , corp = Component.createCorporeal (35, 35) Color.gray
-  , control = \input space -> space
-  , view = \corp ->
-      group [
-        filled corp.color <| circle ((fst corp.dim) / 2)
-      ]
-  , label = { name = "Egg", color = Color.black }
-  }
-
-reduce : Action -> Egg -> Egg
-reduce action egg =
+reduce : Msg -> Entity.Model -> Entity.Model
+reduce action model =
   case action of
     Open ->
-      { egg | corp = Component.setColor Color.orange egg.corp }
+      model
     Kick ->
-      { egg | corp = Component.setColor Color.blue egg.corp }
+      model
+
+-- view
+
+view : Entity.Model -> Form
+view entity =
+  let
+    maybeCorp = Entity.getCorporeal entity
+  in
+    case maybeCorp of
+      Just corp ->
+        group [
+          filled corp.color <| circle ((fst corp.dim) / 2)
+        ]
+      Nothing ->
+        group []

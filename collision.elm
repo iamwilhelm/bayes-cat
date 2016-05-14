@@ -56,8 +56,8 @@ collide self other =
     space = Component.setVel (Vec.neg self.space.vel) self.space
   }
 
-interact : Signal.Address (List Action) -> Entity -> Entity -> Effects Action
-interact address self other =
+interact : Signal.Address (List Action) -> (Int, Entity) -> (Int, Entity) -> Effects Action
+interact address (selfId, self) (otherId, other) =
   if inside self other then
     let
       _ = Debug.log "self vs other" (self.role, other.role)
@@ -65,27 +65,16 @@ interact address self other =
       case (self.role, other.role) of
         (Role.Pointer, Role.Egg) ->
           Effects.task
-          <| Task.succeed (Action.Egg Entity.Egg.Open)
+            <| Task.succeed (Action.EntityList Entity.EntityList.Update selfID Entity.Egg.Open)
         _ ->
           Effects.none
   else
     Effects.none
 
-------------- pairing algorithms
-
-squaredUpdate : (Entity -> Entity -> Effects Action) -> Entity.EntityList.Model -> List (Effects Action)
-squaredUpdate interactionCallback model =
-  let
-    entities = List.map (\(_, entity) -> entity) model.entities
-    everyOtherEntities index entities =
-      List.append (List.take index entities) (List.drop (index + 1) entities)
-
-    gatherEffects interactionCallback entity otherEntities =
-      List.foldl (\other effects ->
-        (interactionCallback entity other) :: effects
-      ) [] otherEntities
-  in
-    List.concat
-    <| List.indexedMap (\index entity ->
-         gatherEffects interactionCallback entity (everyOtherEntities index entities)
-       ) entities
+-- private
+gatherEffects : ((Entity.EntityList.ID, Entity.Egg.Egg) -> (Entity.EntityList.ID, Entity.Egg.Egg) -> Effects Action) -> (Entity.EntityList.ID, Entity.Egg.Egg) -> List (Entity.EntityList.ID, Entity.Egg.Egg) -> List (Effects Action)
+gatherEffects interactionCallback entityPair otherEntityPairs =
+  List.foldl (\otherPair effects ->
+    List.filter (\effect -> effect /= Effects.none)
+      <| (interactionCallback entityPair otherPair) :: effects
+  ) [] otherEntityPairs

@@ -1,8 +1,8 @@
-module Input where
+module Input exposing (..)
 
 import Time
 
-type alias Input =
+type alias Model =
   { window: (Int, Int)
   , mouse : (Float, Float)
   , delta: Time.Time
