@@ -85,6 +85,18 @@ getViewable model =
   ) model.components
   |> List.head
 
+filterMapSpatial : (Component.Spatial.Model -> Component.Spatial.Model) -> Model -> Model
+filterMapSpatial func entity =
+  { entity |
+    components = List.map (\component ->
+        case component of
+          Spatial space ->
+            Spatial (func space)
+          _ ->
+            component
+      ) entity.components
+  }
+
 -- system calls
 
 view : Model -> Maybe Form
@@ -98,6 +110,21 @@ view entity =
       Nothing ->
         Nothing
 
+newtonian : Float -> Model -> Model
+newtonian dt entity =
+  filterMapSpatial (\space ->
+    let
+      --_ = Debug.log "space: " space
+      --a = Debug.log "dt: " dt
+
+      space2 = Component.Spatial.vel (space.vel |+ space.acc .* (dt / 1000)) space
+      --b = Debug.log "space2 " space2
+
+      space3 = Component.Spatial.pos (space.pos |+ space.vel .* (dt / 1000)) space2
+      --c = Debug.log "space3 " space3
+    in
+      space3
+  ) entity
 
 --control : Input.Model -> Entity a -> Entity b
 --control input entity =
@@ -110,24 +137,3 @@ view entity =
 --  { entity |
 --    space = entity.control input entity.space
 --  }
-
---simulate : Input.Model -> Model -> Model
---simulate input entity =
---  { entity |
---    space =
---      entity.space |>
---      Component.setVel (entity.space.vel |+ entity.space.acc .* input.delta)
---      >> Component.setPos (entity.space.pos |+ entity.space.vel .* input.delta)
---  }
---
----- view
---
---view : Model -> Form
---view model =
---  case model of
---    Role.Egg entityModel ->
---      Entity.Egg.view entityModel
---    Role.Popinter entityModel ->
---      Entity.Pointer.view entityModel
---  |> move model.space.pos
---

@@ -62,21 +62,33 @@ update msg model =
   case msg of
     SizeChange size ->
       ({ model | size = size }, Cmd.none)
-    Tick delta ->
-      (model, Cmd.none)
+    Tick dt ->
+      step dt model
     NoOp ->
       (model, Cmd.none)
 
---  let
---    _ = 3 --Debug.log "entities: " <| List.length appState.entities
---    asdf = 4 --Debug.log "actions: " actions
---  in
---    reduceAppState appState actions
---    |> generateEggs input
---    --|> withinViewport input
---    |> collisionDetect inboxAddress
---    |> updateApp input
---
+step : Float -> Model -> (Model, Cmd Msg)
+step dt model =
+  --reduceAppState appState actions
+  --|> generateEggs input
+  --|> withinViewport input
+  --|> collisionDetect inboxAddress
+  model |>
+  newtonian dt
+
+newtonian : Float -> Model ->  (Model, Cmd Msg)
+newtonian dt model =
+  ( { model | entities = List.map (Entity.newtonian dt) model.entities }
+  , Cmd.none
+  )
+
+--updateApp : Input -> App -> App
+--updateApp input (appState, effects) =
+--  ({ appState |
+--    entities =
+--      Entity.EntityList.map (Entity.control input >> Entity.simulate input) appState.entities
+--  } , effects)
+
 ---- Execute actions that were triggered by effects
 --
 --reduceAppState : AppState -> (List Action) -> App
@@ -124,12 +136,6 @@ update msg model =
 --  in
 --    (appState, List.append newEffects effects)
 --
---updateApp : Input -> App -> App
---updateApp input (appState, effects) =
---  ({ appState |
---    entities =
---      Entity.EntityList.map (Entity.control input >> Entity.simulate input) appState.entities
---  } , effects)
 --
 
 ----------------- View methods
@@ -139,6 +145,7 @@ view model =
   let
     (w', h') = (model.size.width, model.size.height)
     (w, h) = (toFloat w', toFloat h')
+    --_ = Debug.log "model in view" model
   in
     div []
     [
@@ -191,7 +198,10 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+  Sub.batch [
+    Window.resizes SizeChange
+  , AnimationFrame.diffs Tick
+  ]
 
 --------------- Main functions
 

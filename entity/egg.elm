@@ -16,7 +16,7 @@ init : Entity.ID -> Entity.Model
 init id = {
     id = id
   , components = [
-      Entity.spatial (0, 0) (0, 0) (0, 0)
+      Entity.spatial (0, 0) (0, 50) (0, 0)
     , Entity.corporeal (35, 35) Color.gray
     , Entity.viewable view
     ]
@@ -41,12 +41,14 @@ reduce action model =
 view : Entity.Model -> Form
 view entity =
   let
+    maybeSpace = Entity.getSpatial entity
     maybeCorp = Entity.getCorporeal entity
   in
-    case maybeCorp of
-      Just corp ->
-        group [
-          filled corp.color <| circle ((fst corp.dim) / 2)
-        ]
-      Nothing ->
+    case (maybeSpace, maybeCorp) of
+      (Just space, Just corp) ->
+        move space.pos
+        <| group [
+             filled corp.color <| circle ((fst corp.dim) / 2)
+           ]
+      _ ->
         group []
