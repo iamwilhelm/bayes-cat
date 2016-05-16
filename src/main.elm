@@ -63,24 +63,27 @@ update msg model =
     SizeChange size ->
       ({ model | size = size }, Cmd.none)
     Tick dt ->
-      step dt model
+      (step dt model, Cmd.none)
     NoOp ->
       (model, Cmd.none)
 
-step : Float -> Model -> (Model, Cmd Msg)
+step : Float -> Model -> Model
 step dt model =
   --reduceAppState appState actions
   --|> generateEggs input
   --|> withinViewport input
   --|> collisionDetect inboxAddress
-  model |>
-  newtonian dt
+  model
+  |> gravity dt
+  |> newtonian dt
 
-newtonian : Float -> Model ->  (Model, Cmd Msg)
+gravity : Float -> Model -> Model
+gravity dt model =
+  { model | entities = List.map (Entity.gravity dt) model.entities }
+
+newtonian : Float -> Model -> Model
 newtonian dt model =
-  ( { model | entities = List.map (Entity.newtonian dt) model.entities }
-  , Cmd.none
-  )
+  { model | entities = List.map (Entity.newtonian dt) model.entities }
 
 --updateApp : Input -> App -> App
 --updateApp input (appState, effects) =

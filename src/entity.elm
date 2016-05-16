@@ -114,16 +114,15 @@ newtonian : Float -> Model -> Model
 newtonian dt entity =
   filterMapSpatial (\space ->
     let
-      --_ = Debug.log "space: " space
-      --a = Debug.log "dt: " dt
-
       space2 = Component.Spatial.vel (space.vel |+ space.acc .* (dt / 1000)) space
-      --b = Debug.log "space2 " space2
-
-      space3 = Component.Spatial.pos (space.pos |+ space.vel .* (dt / 1000)) space2
-      --c = Debug.log "space3 " space3
     in
-      space3
+      Component.Spatial.pos (space2.pos |+ space2.vel .* (dt / 1000)) space2
+  ) entity
+
+gravity : Float -> Model -> Model
+gravity dt entity =
+  filterMapSpatial (\space ->
+    Component.Spatial.acc (space.acc |+ (0, -9.81) .* (dt / 1000)) space
   ) entity
 
 --control : Input.Model -> Entity a -> Entity b
