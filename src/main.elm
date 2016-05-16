@@ -25,6 +25,7 @@ import Html.App as App
 
 import Entity
 import Entity.Egg
+import Entity.Cat
 
 import Debug
 
@@ -42,8 +43,9 @@ init =
   ({
       entities = [
         Entity.Egg.init 1
-       ]
-    , nextEntityId = 0
+      , Entity.Cat.init 2
+      ]
+    , nextEntityId = 3
     , seed = Random.initialSeed 0
     , size = Window.Size 0 0
     }

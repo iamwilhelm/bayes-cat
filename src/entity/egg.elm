@@ -1,7 +1,6 @@
 module Entity.Egg exposing (..)
 
 import Collage exposing (..)
-import Random
 import Color
 
 import Entity
@@ -48,7 +47,7 @@ view entity =
       (Just space, Just corp) ->
         move space.pos
         <| group [
-             filled corp.color <| circle ((fst corp.dim) / 2)
-           ]
+          filled corp.color <| circle ((fst corp.dim) / 2)
+        ]
       _ ->
         group []
