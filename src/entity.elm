@@ -128,16 +128,21 @@ boundFloor size model =
 gravity : Float -> Model -> Model
 gravity dt entity =
   filterMapSpatial (\space ->
-    Component.Spatial.acc ((0, -98060) .* (dt / 1000)) space
+    Component.Spatial.acc ((0, -0.009806) .* dt) space
   ) entity
 
+{-| Apply newtonian physics to the entity.
+
+Uses the Velocity Verlet integration to calculate the physics
+-}
 newtonian : Float -> Model -> Model
 newtonian dt entity =
   filterMapSpatial (\space ->
     let
-      space2 = Component.Spatial.vel (space.vel |+ space.acc .* (dt / 1000)) space
+      oldVel = space.vel
+      space2 = Component.Spatial.vel (space.vel |+ space.acc .* (dt / 10)) space
     in
-      Component.Spatial.pos (space2.pos |+ space2.vel .* (dt / 1000)) space2
+      Component.Spatial.pos (space2.pos |+ ((oldVel |+ space2.vel) .* (0.5 * (dt / 10)))) space2
   ) entity
 
 

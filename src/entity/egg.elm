@@ -16,7 +16,7 @@ init : Entity.ID -> Entity.Model
 init id = {
     id = id
   , components = [
-      Entity.spatial (0, 0) (0, 100) (0, 0)
+      Entity.spatial (0, 0) (0, 0) (0, 0)
     , Entity.corporeal (35, 35) Color.gray
     , Entity.viewable view
     ]
