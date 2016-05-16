@@ -50,6 +50,10 @@ init =
   , Task.perform (\_ -> NoOp) SizeChange Window.size
   )
 
+map : (Entity.Model -> Entity.Model) -> Model -> Model
+map func model =
+  { model | entities = List.map func model.entities }
+
 -------------- Update methods
 
 type Msg =
@@ -75,15 +79,21 @@ step dt model =
   --|> collisionDetect inboxAddress
   model
   |> gravity dt
+  |> boundFloor
   |> newtonian dt
+
+boundFloor : Model -> Model
+boundFloor model =
+  map (Entity.boundFloor model.size) model
 
 gravity : Float -> Model -> Model
 gravity dt model =
-  { model | entities = List.map (Entity.gravity dt) model.entities }
+  map (Entity.gravity dt) model
 
 newtonian : Float -> Model -> Model
 newtonian dt model =
-  { model | entities = List.map (Entity.newtonian dt) model.entities }
+  map (Entity.newtonian dt) model
+
 
 --updateApp : Input -> App -> App
 --updateApp input (appState, effects) =

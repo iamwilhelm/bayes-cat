@@ -1,12 +1,14 @@
 module Entity exposing (..)
 
+import Window
+import Collage exposing (..)
+import Color
+
 import Component.Spatial
 import Component.Corporeal
 import Component.Label
 
 import Vec exposing (..)
-import Collage exposing (..)
-import Color
 import Input
 import Debug
 
@@ -110,6 +112,25 @@ view entity =
       Nothing ->
         Nothing
 
+boundFloor : Window.Size -> Model -> Model
+boundFloor size model =
+  filterMapSpatial (\space ->
+    let
+      (w', h') = (size.width, size.height)
+      (w, h) = (toFloat w', toFloat h')
+    in
+      if Vec.y space.pos < -(h / 2) then
+        Component.Spatial.vel (Vec.neg space.vel) space
+      else
+        space
+  ) model
+
+gravity : Float -> Model -> Model
+gravity dt entity =
+  filterMapSpatial (\space ->
+    Component.Spatial.acc ((0, -98060) .* (dt / 1000)) space
+  ) entity
+
 newtonian : Float -> Model -> Model
 newtonian dt entity =
   filterMapSpatial (\space ->
@@ -119,11 +140,6 @@ newtonian dt entity =
       Component.Spatial.pos (space2.pos |+ space2.vel .* (dt / 1000)) space2
   ) entity
 
-gravity : Float -> Model -> Model
-gravity dt entity =
-  filterMapSpatial (\space ->
-    Component.Spatial.acc (space.acc |+ (0, -9.81) .* (dt / 1000)) space
-  ) entity
 
 --control : Input.Model -> Entity a -> Entity b
 --control input entity =
