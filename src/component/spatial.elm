@@ -3,17 +3,21 @@ module Component.Spatial exposing (..)
 import Vec exposing (..)
 
 type alias Model = {
-    pos : Vec.Vec
-  , vel : Vec.Vec
-  , acc : Vec.Vec
+    mass : Float
+  , forces : List Vec.Vec
+  , pos : Vec.Vec    -- in units
+  , vel : Vec.Vec    -- in units / centiseconds
+  , acc : Vec.Vec    -- in units / centiseconds ** 2
   , heading : Float
   }
 
-init : Vec -> Vec -> Vec -> Model
-init pos vel acc = {
-    pos = pos
-  , vel = vel
-  , acc = acc
+init : Float -> Vec -> Model
+init mass pos = {
+    mass = mass
+  , forces = []
+  , pos = pos
+  , vel = (0, 0)
+  , acc = (0, 0) -- TODO unused. remove
   , heading = 0
   }
 
@@ -28,3 +32,19 @@ vel newVel spatial =
 acc : Vec -> Model -> Model
 acc newAcc spatial =
   { spatial | acc = newAcc }
+
+clearForces : Model -> Model
+clearForces model =
+  { model | forces = [] }
+
+insertForce : Vec -> Model -> Model
+insertForce force model =
+  { model | forces = force :: model.forces }
+
+foldForces : (Vec -> b -> b) -> b -> Model -> b
+foldForces func initVal model =
+  List.foldl func initVal model.forces
+
+totalAcc : Model -> Vec
+totalAcc model =
+  foldForces (\force total -> total |+ force ./ model.mass) (0, 0) model

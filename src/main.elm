@@ -80,9 +80,10 @@ step dt model =
   --|> withinViewport input
   --|> collisionDetect inboxAddress
   model
-  |> gravity dt
   |> boundFloor
+  |> gravity dt
   |> newtonian dt
+  |> clearForces
 
 boundFloor : Model -> Model
 boundFloor model =
@@ -95,6 +96,10 @@ gravity dt model =
 newtonian : Float -> Model -> Model
 newtonian dt model =
   map (Entity.newtonian dt) model
+
+clearForces : Model -> Model
+clearForces model =
+  map Entity.clearForces model
 
 
 --updateApp : Input -> App -> App

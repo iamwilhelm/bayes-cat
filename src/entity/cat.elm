@@ -16,16 +16,17 @@ init : Entity.ID -> Entity.Model
 init id = {
     id = id
   , components = [
-      Entity.spatial (100, 0) (0, 0) (0, 0)
+      Entity.spatial 50 (100, 0)
     , Entity.corporeal (45, 45) Color.orange
     , Entity.viewable view
+    , Entity.gravitate Component.Gravitate.ToEarth
     ]
   }
 
 -- update
 
 type Msg =
-    Move Vec
+    Move Vec.Vec
   | Kill
 
 reduce : Msg -> Entity.Model -> Entity.Model

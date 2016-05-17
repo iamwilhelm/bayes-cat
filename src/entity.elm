@@ -36,9 +36,9 @@ type alias ComponentReduce = {
 
 -- component
 
-spatial : Vec -> Vec -> Vec -> Component
-spatial pos vel acc =
-  Spatial <| Component.Spatial.init pos vel acc
+spatial : Float -> Vec -> Component
+spatial mass pos =
+  Spatial <| Component.Spatial.init mass pos
 
 corporeal : Vec -> Color.Color -> Component
 corporeal dim color =
@@ -128,7 +128,7 @@ boundFloor size model =
 gravity : Float -> Model -> Model
 gravity dt entity =
   filterMapSpatial (\space ->
-    Component.Spatial.acc ((0, -0.009806) .* dt) space
+    Component.Spatial.insertForce ((0, -0.009806) .* dt) space
   ) entity
 
 {-| Apply newtonian physics to the entity.
@@ -139,11 +139,15 @@ newtonian : Float -> Model -> Model
 newtonian dt entity =
   filterMapSpatial (\space ->
     let
-      oldVel = space.vel
-      space2 = Component.Spatial.vel (space.vel |+ space.acc .* (dt / 10)) space
+      acc = Component.Spatial.totalAcc space
+      space2 = Component.Spatial.vel (space.vel |+ acc .* (dt / 10)) space
     in
-      Component.Spatial.pos (space2.pos |+ ((oldVel |+ space2.vel) .* (0.5 * (dt / 10)))) space2
+      Component.Spatial.pos (space2.pos |+ ((space.vel |+ space2.vel) .* (0.5 * (dt / 10)))) space2
   ) entity
+
+clearForces : Model -> Model
+clearForces entity =
+  filterMapSpatial Component.Spatial.clearForces entity
 
 
 --control : Input.Model -> Entity a -> Entity b
