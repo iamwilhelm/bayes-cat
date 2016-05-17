@@ -15,15 +15,13 @@ import Html exposing (..)
 import Html.App as App
 
 
---import Collision
---import Viewport
---import Vec exposing (..)
---import Entity exposing (Entity)
---import Component
-
 import Entity
 import Entity.Egg
 import Entity.Cat
+
+import System.Physics
+--import Collision
+--import Viewport
 
 import Debug
 
@@ -78,26 +76,10 @@ step dt model =
   --|> withinViewport input
   --|> collisionDetect inboxAddress
   model
-  |> boundFloor
-  |> gravity dt
-  |> newtonian dt
-  |> clearForces
-
-boundFloor : Model -> Model
-boundFloor model =
-  map (Entity.boundFloor model.size) model
-
-gravity : Float -> Model -> Model
-gravity dt model =
-  map (Entity.gravity dt) model
-
-newtonian : Float -> Model -> Model
-newtonian dt model =
-  map (Entity.newtonian dt) model
-
-clearForces : Model -> Model
-clearForces model =
-  map Entity.clearForces model
+  |> map (Entity.boundFloor model.size)
+  |> map (System.Physics.gravity dt)
+  |> map (System.Physics.newtonian dt)
+  |> map Entity.clearForces
 
 
 --updateApp : Input -> App -> App

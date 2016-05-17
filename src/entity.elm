@@ -26,6 +26,12 @@ type Component =
   | Viewable ComponentView
   | Gravitate Component.Gravitate.Model
 
+{-| A component that renders the entity's view method
+
+NOTE: Reason why Component declarations are in Entity is because
+a view component refers back to the entity model itself, as well
+as an entity containing a list of components
+-}
 type alias ComponentView = {
     func : Model -> Form
   }
@@ -142,32 +148,6 @@ boundFloor size model =
         space
   ) model
 
-gravity : Float -> Model -> Model
-gravity dt entity =
-  let
-    maybeGrav = getGravitate entity
-  in
-    case maybeGrav of
-      Just grav ->
-        filterMapSpatial (\space ->
-          Component.Spatial.acc (grav.acc .* dt) space
-        ) entity
-      Nothing ->
-        entity
-
-{-| Apply newtonian physics to the entity.
-
-Uses the Velocity Verlet integration to calculate the physics
--}
-newtonian : Float -> Model -> Model
-newtonian dt entity =
-  filterMapSpatial (\space ->
-    let
-      acc = Component.Spatial.totalAcc space
-      space2 = Component.Spatial.vel (space.vel |+ acc .* (dt / 10)) space
-    in
-      Component.Spatial.pos (space2.pos |+ ((space.vel |+ space2.vel) .* (0.5 * (dt / 10)))) space2
-  ) entity
 
 clearForces : Model -> Model
 clearForces entity =
