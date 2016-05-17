@@ -75,12 +75,11 @@ step dt model =
   --|> generateEggs input
   --|> withinViewport input
   --|> collisionDetect inboxAddress
-  model
-  |> map (Entity.boundFloor model.size)
-  |> map (System.Physics.gravity dt)
-  |> map (System.Physics.newtonian dt)
-  |> map Entity.clearForces
-
+  ( map (Entity.boundFloor model.size)
+    >> map (System.Physics.gravity dt)
+    >> map (System.Physics.newtonian dt)
+    >> map System.Physics.clearForces
+  ) model
 
 --updateApp : Input -> App -> App
 --updateApp input (appState, effects) =

@@ -149,10 +149,6 @@ boundFloor size model =
   ) model
 
 
-clearForces : Model -> Model
-clearForces entity =
-  filterMapSpatial Component.Spatial.clearForces entity
-
 
 --control : Input.Model -> Entity a -> Entity b
 --control input entity =
