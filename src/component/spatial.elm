@@ -47,4 +47,4 @@ foldForces func initVal model =
 
 totalAcc : Model -> Vec
 totalAcc model =
-  foldForces (\force total -> total |+ force ./ model.mass) (0, 0) model
+  foldForces (\force total -> total |+ force ./ model.mass) model.acc model

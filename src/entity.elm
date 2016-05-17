@@ -7,6 +7,7 @@ import Color
 import Component.Spatial
 import Component.Corporeal
 import Component.Label
+import Component.Gravitate
 
 import Vec exposing (..)
 import Input
@@ -25,6 +26,7 @@ type Component =
   | Corporeal Component.Corporeal.Model
   | Label Component.Label.Model
   | Viewable ComponentView
+  | Gravitate Component.Gravitate.Model
 
 type alias ComponentView = {
     func : Model -> Form
@@ -51,6 +53,10 @@ label title color =
 viewable : (Model -> Form) -> Component
 viewable func =
   Viewable { func = func }
+
+gravitate : Component.Gravitate.Planet -> Component
+gravitate planet =
+  Gravitate <| Component.Gravitate.init planet
 
 -- accessors
 
@@ -82,6 +88,17 @@ getViewable model =
     case component of
       Viewable exec ->
         Just exec
+      _ ->
+        Nothing
+  ) model.components
+  |> List.head
+
+getGravitate : Model -> Maybe Component.Gravitate.Model
+getGravitate model =
+  List.filterMap (\component ->
+    case component of
+      Gravitate grav ->
+        Just grav
       _ ->
         Nothing
   ) model.components
@@ -127,9 +144,16 @@ boundFloor size model =
 
 gravity : Float -> Model -> Model
 gravity dt entity =
-  filterMapSpatial (\space ->
-    Component.Spatial.insertForce ((0, -0.009806) .* dt) space
-  ) entity
+  let
+    maybeGrav = getGravitate entity
+  in
+    case maybeGrav of
+      Just grav ->
+        filterMapSpatial (\space ->
+          Component.Spatial.acc (grav.acc .* dt) space
+        ) entity
+      Nothing ->
+        entity
 
 {-| Apply newtonian physics to the entity.
 

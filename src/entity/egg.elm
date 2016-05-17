@@ -4,6 +4,7 @@ import Collage exposing (..)
 import Color
 
 import Entity
+import Component.Gravitate
 import Input
 import Vec exposing (..)
 
@@ -18,6 +19,7 @@ init id = {
       Entity.spatial 10 (0, 0)
     , Entity.corporeal (35, 35) Color.gray
     , Entity.viewable view
+    , Entity.gravitate Component.Gravitate.ToMoon
     ]
   }
 

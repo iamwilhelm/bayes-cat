@@ -5,6 +5,7 @@ import Color
 
 import Entity
 import Component.Corporeal
+import Component.Gravitate
 import Input
 import Vec exposing (..)
 
