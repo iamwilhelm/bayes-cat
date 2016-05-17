@@ -15,11 +15,9 @@ import Html exposing (..)
 import Html.App as App
 
 
---import Input exposing (Input)
 --import Collision
 --import Viewport
 --import Vec exposing (..)
---import Role
 --import Entity exposing (Entity)
 --import Component
 

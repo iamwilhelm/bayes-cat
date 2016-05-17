@@ -5,7 +5,6 @@ import Color
 
 import Entity
 import Component.Gravitate
-import Input
 import Vec exposing (..)
 
 import Debug

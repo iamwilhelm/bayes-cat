@@ -10,9 +10,7 @@ import Component.Label
 import Component.Gravitate
 
 import Vec exposing (..)
-import Input
 import Debug
-
 
 type alias ID = Int
 
