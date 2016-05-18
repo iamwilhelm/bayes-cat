@@ -19,8 +19,11 @@ import Entity
 import Entity.Egg
 import Entity.Cat
 
+-- move when reduce for controller moves
+import Component.Spatial
+
 import System.Physics
---import Collision
+--import System.Collision
 --import Viewport
 
 import Debug
@@ -38,8 +41,8 @@ init : (Model, Cmd Msg)
 init =
   ({
       entities = [
-        Entity.Egg.init 1
-      , Entity.Cat.init 2
+        Entity.Cat.init 1
+      , Entity.Egg.init 2
       ]
     , nextEntityId = 3
     , seed = Random.initialSeed 0
@@ -57,15 +60,27 @@ map func model =
 type Msg =
     SizeChange Window.Size
   | Tick Float
+  | Move ControlMsg
   | NoOp
+
+type ControlMsg =
+    Up
+  | Down
+  | Left
+  | Right
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     SizeChange size ->
-      ({ model | size = size }, Cmd.none)
+      { model | size = size } ! []
     Tick dt ->
-      (step dt model, Cmd.none)
+      step dt model ! []
+    Move controlMsg ->
+      let
+        (newEntities, cmd) = reduce controlMsg model.entities
+      in
+        ({ model | entities = newEntities }, cmd)
     NoOp ->
       (model, Cmd.none)
 
@@ -81,12 +96,49 @@ step dt model =
     >> map System.Physics.clearForces
   ) model
 
---updateApp : Input -> App -> App
---updateApp input (appState, effects) =
---  ({ appState |
---    entities =
---      Entity.EntityList.map (Entity.control input >> Entity.simulate input) appState.entities
---  } , effects)
+-- TODO move to System.Control
+reduce : ControlMsg -> List Entity.Model -> (List Entity.Model, Cmd Msg)
+reduce msg entities =
+  case msg of
+    Up ->
+      List.map (\entity ->
+        -- How to deal when it has Component.Controllable?
+        if entity.id == 1 then -- a hack to find player character
+          Entity.filterMapSpatial (\space ->
+            Component.Spatial.insertForce (0, 2000) space
+          ) entity
+        else
+          entity
+      ) entities ! []
+    Down ->
+      List.map (\entity ->
+        if entity.id == 1 then -- a hack to find player character
+          Entity.filterMapSpatial (\space ->
+            Component.Spatial.insertForce (0, 0) space
+          ) entity
+        else
+          entity
+      ) entities ! []
+    Left ->
+      List.map (\entity ->
+        -- How to deal when it has Component.Controllable?
+        if entity.id == 1 then -- a hack to find player character
+          Entity.filterMapSpatial (\space ->
+            Component.Spatial.insertForce (-100, 0) space
+          ) entity
+        else
+          entity
+      ) entities ! []
+    Right ->
+      List.map (\entity ->
+        -- How to deal when it has Component.Controllable?
+        if entity.id == 1 then -- a hack to find player character
+          Entity.filterMapSpatial (\space ->
+            Component.Spatial.insertForce (100, 0) space
+          ) entity
+        else
+          entity
+      ) entities ! []
 
 ---- Execute actions that were triggered by effects
 --
