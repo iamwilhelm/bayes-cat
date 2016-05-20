@@ -14,15 +14,14 @@ import Text
 import Html exposing (..)
 import Html.App as App
 
-
 import Entity
 import Entity.Egg
 import Entity.Cat
 
--- move when reduce for controller moves
-import Component.Spatial
+import Component.KeyboardControl
 
 import System.Physics
+import System.Control
 --import System.Collision
 --import Viewport
 
@@ -55,19 +54,18 @@ map : (Entity.Model -> Entity.Model) -> Model -> Model
 map func model =
   { model | entities = List.map func model.entities }
 
+--pairMap : (Entity.Model -> Entity.Model -> a) -> Model -> List a
+--pairMap func model =
+--  { model |
+--    entities = System.Collision.pairMap
+--  }
 -------------- Update methods
 
 type Msg =
     SizeChange Window.Size
   | Tick Float
-  | Move ControlMsg
+  | Move Component.KeyboardControl.Msg
   | NoOp
-
-type ControlMsg =
-    Up
-  | Down
-  | Left
-  | Right
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -78,9 +76,10 @@ update msg model =
       step dt model ! []
     Move controlMsg ->
       let
-        (newEntities, cmd) = reduce controlMsg model.entities
+        -- TODO should reduce only return effects?
+        newEntities = System.Control.reduce controlMsg model.entities
       in
-        ({ model | entities = newEntities }, cmd)
+        { model | entities = newEntities } ! []
     NoOp ->
       (model, Cmd.none)
 
@@ -95,99 +94,6 @@ step dt model =
     >> map (System.Physics.newtonian dt)
     >> map System.Physics.clearForces
   ) model
-
--- TODO move to System.Control
-reduce : ControlMsg -> List Entity.Model -> (List Entity.Model, Cmd Msg)
-reduce msg entities =
-  case msg of
-    Up ->
-      List.map (\entity ->
-        -- How to deal when it has Component.Controllable?
-        if entity.id == 1 then -- a hack to find player character
-          Entity.filterMapSpatial (\space ->
-            Component.Spatial.insertForce (0, 2000) space
-          ) entity
-        else
-          entity
-      ) entities ! []
-    Down ->
-      List.map (\entity ->
-        if entity.id == 1 then -- a hack to find player character
-          Entity.filterMapSpatial (\space ->
-            Component.Spatial.insertForce (0, 0) space
-          ) entity
-        else
-          entity
-      ) entities ! []
-    Left ->
-      List.map (\entity ->
-        -- How to deal when it has Component.Controllable?
-        if entity.id == 1 then -- a hack to find player character
-          Entity.filterMapSpatial (\space ->
-            Component.Spatial.insertForce (-100, 0) space
-          ) entity
-        else
-          entity
-      ) entities ! []
-    Right ->
-      List.map (\entity ->
-        -- How to deal when it has Component.Controllable?
-        if entity.id == 1 then -- a hack to find player character
-          Entity.filterMapSpatial (\space ->
-            Component.Spatial.insertForce (100, 0) space
-          ) entity
-        else
-          entity
-      ) entities ! []
-
----- Execute actions that were triggered by effects
---
---reduceAppState : AppState -> (List Action) -> App
---reduceAppState appState actions =
---  ({ appState |
---    entities = List.foldl reduce appState.entities actions
---  }, [])
---
---reduce : Action -> Entity.EntityList.Model -> Entity.EntityList.Model
---reduce action entities =
---  case action of
---    Action.NoOp ->
---      entities
---    Action.Egg eggAction ->
---      entities
---    Action.EntityList entityListAction ->
---      Entity.EntityList.reduce entityListAction entities
---
---debugEffects : App -> App
---debugEffects (appState, effects) =
---  let
---    _ = Debug.log "effects: " <| effects
---  in
---    (appState, effects)
---
---generateEggs : Input -> App -> App
---generateEggs input (appState, effects) =
---  let
---    newEffect = Effects.task
---      <| Task.succeed (Action.EntityList Entity.EntityList.Insert)
---  in
---    (appState, newEffect :: effects)
---
-----withinViewport : Input -> App -> App
-----withinViewport input (appState, effects) =
-----  ({ appState |
-----     entities = Viewport.cull input appState.entities
-----   }
-----  , effects)
---
---collisionDetect : Signal.Address (List Action) -> App -> App
---collisionDetect inboxAddress (appState, effects) =
---  let
---    newEffects = Collision.pairMap (Collision.interact inboxAddress) appState.entities
---  in
---    (appState, List.append newEffects effects)
---
---
 
 ----------------- View methods
 
@@ -205,47 +111,7 @@ view model =
       <| List.filterMap Entity.view model.entities
     ]
 
-
----------------- Input methods
---
---delta : Signal Time
---delta = Signal.map Time.inSeconds (Time.fps 30)
---
---screenToWorld : (Int, Int) -> (Int, Int) -> (Float, Float)
---screenToWorld (width, height) (x, y) =
---  ((toFloat x) - (toFloat width) / 2,
---  -(toFloat y) + (toFloat height) / 2)
---
---inputSignal : Signal Input
---inputSignal =
---  Signal.sampleOn delta <|
---    Signal.map3 Input
---      (Window.dimensions)
---      (Signal.map2 screenToWorld Window.dimensions Mouse.position)
---      delta
---
---actionInbox : Signal.Mailbox (List Action)
---actionInbox =
---  Signal.mailbox []
---
---actionInputSignal : Signal (Input, List Action)
---actionInputSignal =
---  Signal.map2 (\input actions -> (input, actions))
---    inputSignal
---    (Signal.sampleOn delta actionInbox.signal)
---
---appSignal : Signal App
---appSignal =
---  Signal.foldp (update actionInbox.address) (initApp, []) actionInputSignal
---
---stateSignal : Signal AppState
---stateSignal =
---  Signal.map fst appSignal
---
---effectSignal : Signal (List (Effects Action))
---effectSignal =
---  Signal.map snd appSignal
---
+----------------- Subscriptions
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

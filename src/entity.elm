@@ -8,6 +8,7 @@ import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
+import Component.KeyboardControl
 
 import Vec exposing (..)
 import Debug
@@ -25,6 +26,7 @@ type Component =
   | Label Component.Label.Model
   | Viewable ComponentView
   | Gravitate Component.Gravitate.Model
+  | KeyboardControl Component.KeyboardControl.Model
 
 {-| A component that renders the entity's view method
 
@@ -61,6 +63,10 @@ viewable func =
 gravitate : Component.Gravitate.Planet -> Component
 gravitate planet =
   Gravitate <| Component.Gravitate.init planet
+
+keyboardControl : Component
+keyboardControl =
+  KeyboardControl <| Component.KeyboardControl.init
 
 -- accessors
 
@@ -108,6 +114,17 @@ getGravitate model =
   ) model.components
   |> List.head
 
+getKeyboardControl : Model -> Maybe Component.KeyboardControl.Model
+getKeyboardControl model =
+  List.filterMap (\component ->
+    case component of
+      KeyboardControl kbdCtrl ->
+        Just kbdCtrl
+      _ ->
+        Nothing
+  ) model.components
+  |> List.head
+
 filterMapSpatial : (Component.Spatial.Model -> Component.Spatial.Model) -> Model -> Model
 filterMapSpatial func entity =
   { entity |
@@ -147,17 +164,3 @@ boundFloor size model =
       else
         space
   ) model
-
-
-
---control : Input.Model -> Entity a -> Entity b
---control input entity =
---  map (\model ->
---      { model |
---        space =
---      }
---    ) entity
---
---  { entity |
---    space = entity.control input entity.space
---  }

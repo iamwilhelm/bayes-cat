@@ -6,6 +6,7 @@ import Color
 import Entity
 import Component.Corporeal
 import Component.Gravitate
+import Component.KeyboardControl
 import Vec exposing (..)
 
 import Debug
@@ -20,6 +21,7 @@ init id = {
     , Entity.corporeal (45, 45) Color.orange
     , Entity.viewable view
     , Entity.gravitate Component.Gravitate.ToEarth
+    , Entity.keyboardControl
     ]
   }
 
@@ -36,6 +38,12 @@ reduce action model =
       model
     Kill ->
       model
+
+keyboard : Int -> Msg
+keyboard key =
+  case key of
+    _ ->
+      Move (0, 10)
 
 -- view
 
