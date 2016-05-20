@@ -2,7 +2,9 @@ import Window
 import AnimationFrame
 import Mouse
 import Random
+import Keyboard
 import Task
+import Char
 
 import Time exposing (Time)
 
@@ -69,19 +71,22 @@ type Msg =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  case msg of
-    SizeChange size ->
-      { model | size = size } ! []
-    Tick dt ->
-      step dt model ! []
-    Move controlMsg ->
-      let
-        -- TODO should reduce only return effects?
-        newEntities = System.Control.reduce controlMsg model.entities
-      in
-        { model | entities = newEntities } ! []
-    NoOp ->
-      (model, Cmd.none)
+  let
+    b = 3--Debug.log "update msg: " msg
+  in
+    case msg of
+      SizeChange size ->
+        { model | size = size } ! []
+      Tick dt ->
+        step dt model ! []
+      Move controlMsg ->
+        let
+          -- TODO should reduce only return effects?
+          newEntities = System.Control.reduce controlMsg model.entities
+        in
+          { model | entities = newEntities } ! []
+      NoOp ->
+        (model, Cmd.none)
 
 step : Float -> Model -> Model
 step dt model =
@@ -118,7 +123,23 @@ subscriptions model =
   Sub.batch [
     Window.resizes SizeChange
   , AnimationFrame.diffs Tick
+  , Keyboard.downs (keyboardRouter True)
+  , Keyboard.ups (keyboardRouter False)
   ]
+
+keyboardRouter : Bool -> Keyboard.KeyCode -> Msg
+keyboardRouter isDown keyCode =
+  case (Char.fromCode keyCode) of
+    'W' ->
+      Move Component.KeyboardControl.Up
+    'S' ->
+      Move Component.KeyboardControl.Down
+    'A' ->
+      Move Component.KeyboardControl.Left
+    'D' ->
+      Move Component.KeyboardControl.Right
+    _ ->
+      NoOp
 
 --------------- Main functions
 

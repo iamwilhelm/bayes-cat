@@ -23,6 +23,9 @@ gravity dt entity =
 {-| Apply newtonian physics to the entity.
 
 Uses the Velocity Verlet integration to calculate the physics
+
+TODO need to cap limits of velocity before translating to position
+
 -}
 newtonian : Float -> Entity.Model -> Entity.Model
 newtonian dt entity =

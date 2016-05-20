@@ -20,24 +20,24 @@ reduce msg entities =
     Component.KeyboardControl.Up ->
       filterPlayerMap (\player ->
         Entity.filterMapSpatial (\space ->
-          Component.Spatial.insertForce (0, 2000) space
+          Component.Spatial.insertForce (0, 100) space
         ) player
       ) entities
     Component.KeyboardControl.Down ->
       filterPlayerMap (\player ->
         Entity.filterMapSpatial (\space ->
-          Component.Spatial.insertForce (0, 0) space
+          Component.Spatial.insertForce (0, 100) space
         ) player
       ) entities
     Component.KeyboardControl.Left ->
       filterPlayerMap (\player ->
         Entity.filterMapSpatial (\space ->
-          Component.Spatial.insertForce (-100, 0) space
+          Component.Spatial.insertForce (-50, 0) space
         ) player
       ) entities
     Component.KeyboardControl.Right ->
       filterPlayerMap (\player ->
         Entity.filterMapSpatial (\space ->
-          Component.Spatial.insertForce (100, 0) space
+          Component.Spatial.insertForce (50, 0) space
         ) player
       ) entities
