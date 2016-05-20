@@ -66,7 +66,7 @@ map func model =
 type Msg =
     SizeChange Window.Size
   | Tick Float
-  | Move Component.KeyboardControl.Msg
+  | Player Component.KeyboardControl.Msg
   | NoOp
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -79,10 +79,10 @@ update msg model =
         { model | size = size } ! []
       Tick dt ->
         step dt model ! []
-      Move controlMsg ->
+      Player controlMsg ->
         let
           -- TODO should reduce only return effects?
-          newEntities = System.Control.reduce controlMsg model.entities
+          newEntities = System.Control.byKeyboard controlMsg model.entities
         in
           { model | entities = newEntities } ! []
       NoOp ->
@@ -131,13 +131,13 @@ keyboardRouter : Bool -> Keyboard.KeyCode -> Msg
 keyboardRouter isDown keyCode =
   case (Char.fromCode keyCode) of
     'W' ->
-      Move Component.KeyboardControl.Up
+      Player Component.KeyboardControl.Up
     'S' ->
-      Move Component.KeyboardControl.Down
+      Player  Component.KeyboardControl.Down
     'A' ->
-      Move Component.KeyboardControl.Left
+      Player Component.KeyboardControl.Left
     'D' ->
-      Move Component.KeyboardControl.Right
+      Player Component.KeyboardControl.Right
     _ ->
       NoOp
 

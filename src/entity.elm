@@ -4,6 +4,7 @@ import Window
 import Collage exposing (..)
 import Color
 
+import Component
 import Component.Spatial
 import Component.Corporeal
 import Component.Label
@@ -17,125 +18,58 @@ type alias ID = Int
 
 type alias Model = {
     id : ID
-  , components : List Component
+  , components : List Component.Model
   }
 
-type Component =
-    Spatial Component.Spatial.Model
-  | Corporeal Component.Corporeal.Model
-  | Label Component.Label.Model
-  | Viewable ComponentView
-  | Gravitate Component.Gravitate.Model
-  | KeyboardControl Component.KeyboardControl.Model
+-- component creation TODO Should move into Component?
 
-{-| A component that renders the entity's view method
-
-NOTE: Reason why Component declarations are in Entity is because
-a view component refers back to the entity model itself, as well
-as an entity containing a list of components
--}
-type alias ComponentView = {
-    func : Model -> Form
-  }
-
-type alias ComponentReduce = {
-    func : Model -> Model
-  }
-
--- component
-
-spatial : Float -> Vec -> Component
+spatial : Float -> Vec -> Component.Model
 spatial mass pos =
-  Spatial <| Component.Spatial.init mass pos
+  Component.SpatialType <| Component.Spatial.init mass pos
 
-corporeal : Vec -> Color.Color -> Component
+corporeal : Vec -> Color.Color -> Component.Model
 corporeal dim color =
-  Corporeal <| Component.Corporeal.init dim color
+  Component.CorporealType <| Component.Corporeal.init dim color
 
-label : String -> Color.Color -> Component
+label : String -> Color.Color -> Component.Model
 label title color =
-  Label <| Component.Label.Model title color
+  Component.LabelType <| Component.Label.Model title color
 
-viewable : (Model -> Form) -> Component
-viewable func =
-  Viewable { func = func }
-
-gravitate : Component.Gravitate.Planet -> Component
+gravitate : Component.Gravitate.Planet -> Component.Model
 gravitate planet =
-  Gravitate <| Component.Gravitate.init planet
+  Component.GravitateType <| Component.Gravitate.init planet
 
-keyboardControl : Component
-keyboardControl =
-  KeyboardControl <| Component.KeyboardControl.init
+viewable : (List Component.Model -> Form) -> Component.Model
+viewable func =
+  Component.ViewableType { func = func }
+
 
 -- accessors
 
 getSpatial : Model -> Maybe Component.Spatial.Model
 getSpatial model =
-  List.filterMap (\component ->
-    case component of
-      Spatial spaceModel ->
-        Just spaceModel
-      _ ->
-        Nothing
-  ) model.components
-  |> List.head
+  Component.getSpatial model.components
 
 getCorporeal : Model -> Maybe Component.Corporeal.Model
 getCorporeal model =
-  List.filterMap (\component ->
-    case component of
-      Corporeal corpModel ->
-        Just corpModel
-      _ ->
-        Nothing
-  ) model.components
-  |> List.head
-
-getViewable : Model -> Maybe ComponentView
-getViewable model =
-  List.filterMap (\component ->
-    case component of
-      Viewable exec ->
-        Just exec
-      _ ->
-        Nothing
-  ) model.components
-  |> List.head
+  Component.getCorporeal model.components
 
 getGravitate : Model -> Maybe Component.Gravitate.Model
 getGravitate model =
-  List.filterMap (\component ->
-    case component of
-      Gravitate grav ->
-        Just grav
-      _ ->
-        Nothing
-  ) model.components
-  |> List.head
+  Component.getGravitate model.components
 
-getKeyboardControl : Model -> Maybe Component.KeyboardControl.Model
-getKeyboardControl model =
-  List.filterMap (\component ->
-    case component of
-      KeyboardControl kbdCtrl ->
-        Just kbdCtrl
-      _ ->
-        Nothing
-  ) model.components
-  |> List.head
+getViewable : Model -> Maybe Component.ComponentViewable
+getViewable model =
+  Component.getViewable model.components
+
 
 filterMapSpatial : (Component.Spatial.Model -> Component.Spatial.Model) -> Model -> Model
-filterMapSpatial func entity =
-  { entity |
-    components = List.map (\component ->
-        case component of
-          Spatial space ->
-            Spatial (func space)
-          _ ->
-            component
-      ) entity.components
-  }
+filterMapSpatial func model =
+  { model | components = Component.filterMapSpatial func model.components }
+
+filterMapCorporeal : (Component.Corporeal.Model -> Component.Corporeal.Model) -> Model -> Model
+filterMapCorporeal func model =
+  { model | components = Component.filterMapCorporeal func model.components }
 
 -- system calls
 
@@ -146,7 +80,7 @@ view entity =
   in
     case maybeViewable of
       Just viewable ->
-        Just <| viewable.func entity
+        Just <| viewable.func entity.components
       Nothing ->
         Nothing
 

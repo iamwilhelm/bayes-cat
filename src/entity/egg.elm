@@ -4,6 +4,7 @@ import Collage exposing (..)
 import Color
 
 import Entity
+import Component
 import Component.Gravitate
 import Vec exposing (..)
 
@@ -38,11 +39,11 @@ reduce action model =
 
 -- view
 
-view : Entity.Model -> Form
-view entity =
+view : List Component.Model -> Form
+view components =
   let
-    maybeSpace = Entity.getSpatial entity
-    maybeCorp = Entity.getCorporeal entity
+    maybeSpace = Component.getSpatial components
+    maybeCorp = Component.getCorporeal components
   in
     case (maybeSpace, maybeCorp) of
       (Just space, Just corp) ->

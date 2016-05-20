@@ -4,6 +4,8 @@ import Collage exposing (..)
 import Color
 
 import Entity
+import Component
+import Component.Spatial
 import Component.Corporeal
 import Component.Gravitate
 import Component.KeyboardControl
@@ -21,7 +23,7 @@ init id = {
     , Entity.corporeal (45, 45) Color.orange
     , Entity.viewable view
     , Entity.gravitate Component.Gravitate.ToEarth
-    , Entity.keyboardControl
+    --, Entity.controllable reduce
     ]
   }
 
@@ -47,11 +49,11 @@ keyboard key =
 
 -- view
 
-view : Entity.Model -> Form
-view entity =
+view : List Component.Model -> Form
+view components =
   let
-    maybeSpace = Entity.getSpatial entity
-    maybeCorp = Entity.getCorporeal entity
+    maybeSpace = Component.getSpatial components
+    maybeCorp = Component.getCorporeal components
   in
     case (maybeSpace, maybeCorp) of
       (Just space, Just corp) ->
