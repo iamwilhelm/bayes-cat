@@ -1,0 +1,6 @@
+{
+  "name": "Bayes-cat",
+  "tagline": "",
+  "body": "### Bayes-cat\r\nThe repo is a simple game about cats knocking down things in a house. It's an exercise to write a 2D game using an Entity Component System in a pure functional language called Elm.\r\n\r\n### Versions\r\nI've recently upgraded to Elm 0.17, which meant breaking changes. Also, I've implemented a better Entity-Component-System than I had before. Here's a log of the different versions.\r\n\r\n[v0.0.2](v0.0.2)\r\n- New Entity Component System \r\n- Gravity component available for different planets\r\n- Newtonian movemnts\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
