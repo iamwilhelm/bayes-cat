@@ -11274,7 +11274,11 @@ var _iamwilhelm$bayes_cat$Entity$boundFloor = F2(
 						_iamwilhelm$bayes_cat$Component_Spatial$vel,
 						A2(
 							_iamwilhelm$bayes_cat$Vec_ops['.*'],
-							_iamwilhelm$bayes_cat$Vec$neg(space.vel),
+							{
+								ctor: '_Tuple2',
+								_0: _iamwilhelm$bayes_cat$Vec$x(space.vel),
+								_1: 0 - _iamwilhelm$bayes_cat$Vec$y(space.vel)
+							},
 							0.9),
 						space)) : space;
 			},
