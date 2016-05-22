@@ -80,21 +80,14 @@ update msg model =
       Tick dt ->
         step dt model ! []
       Player catMsg ->
-        { model |
-          entities =
-            System.Control.reduceMap Entity.Role.Cat (Entity.Cat.reduce catMsg) model.entities
-        } ! []
+        map (System.Control.control Entity.Role.Cat (Entity.Cat.reduce catMsg)) model ! []
       Egg eggMsg ->
-        { model |
-          entities =
-            System.Control.reduceMap Entity.Role.Egg (Entity.Egg.reduce eggMsg) model.entities
-        } ! []
+        map (System.Control.control Entity.Role.Egg (Entity.Egg.reduce eggMsg)) model ! []
       NoOp ->
         (model, Cmd.none)
 
 step : Float -> Model -> Model
 step dt model =
-  --reduceAppState appState actions
   --|> generateEggs input
   --|> withinViewport input
   --|> collisionDetect inboxAddress
