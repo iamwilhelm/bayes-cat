@@ -2,33 +2,30 @@ module Component exposing (..)
 
 import Collage exposing (..)
 
+import Entity.Role
 import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
-import Component.KeyboardControl
+import Component.Control
 
 type Model =
     SpatialType Component.Spatial.Model
   | CorporealType Component.Corporeal.Model
   | LabelType Component.Label.Model
-  | ViewableType ComponentViewable
   | GravitateType Component.Gravitate.Model
---  | Controllable ComponentControllable
+  | ViewableType ViewableModel
+  | ControllableType Component.Control.Model
 
 {-| A component that renders the entity's view method
 
-NOTE: Reason why Component declarations are in Entity is because
-a view component refers back to the entity model itself, as well
-as an entity containing a list of components
+NOTE: Reason why Component declarations is in Component because
+a view component refers back to the component model itself, as well
+as a component containing the different types of components
 -}
-type alias ComponentViewable = {
+type alias ViewableModel = {
     func : List Model -> Form
   }
-
---type alias ComponentControllable = {
---    func : message -> List Component -> List Component
---  }
 
 getSpatial : List Model -> Maybe Component.Spatial.Model
 getSpatial components =
@@ -63,7 +60,7 @@ getGravitate components =
   ) components
   |> List.head
 
-getViewable : List Model -> Maybe ComponentViewable
+getViewable : List Model -> Maybe ViewableModel
 getViewable components =
   List.filterMap (\component ->
     case component of
@@ -74,16 +71,16 @@ getViewable components =
   ) components
   |> List.head
 
---getControllable : List Model -> Maybe ComponentControllable
---getControllable components =
---  List.filterMap (\component ->
---    case component of
---      Controllable ctrl ->
---        Just ctrl
---      _ ->
---        Nothing
---  ) components
---  |> List.head
+getControllable : List Model -> Maybe Component.Control.Model
+getControllable components =
+  List.filterMap (\component ->
+    case component of
+      ControllableType ctrl ->
+        Just ctrl
+      _ ->
+        Nothing
+  ) components
+  |> List.head
 
 filterMapSpatial : (Component.Spatial.Model -> Component.Spatial.Model) -> List Model -> List Model
 filterMapSpatial func components =

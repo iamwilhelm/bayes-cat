@@ -4,12 +4,13 @@ import Window
 import Collage exposing (..)
 import Color
 
+import Entity.Role
 import Component
 import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
-import Component.KeyboardControl
+import Component.Control
 
 import Vec exposing (..)
 import Debug
@@ -43,6 +44,9 @@ viewable : (List Component.Model -> Form) -> Component.Model
 viewable func =
   Component.ViewableType { func = func }
 
+controllable : Entity.Role.Name -> Component.Model
+controllable role =
+  Component.ControllableType { role = role }
 
 -- accessors
 
@@ -58,10 +62,13 @@ getGravitate : Model -> Maybe Component.Gravitate.Model
 getGravitate model =
   Component.getGravitate model.components
 
-getViewable : Model -> Maybe Component.ComponentViewable
+getViewable : Model -> Maybe Component.ViewableModel
 getViewable model =
   Component.getViewable model.components
 
+getControllable : Model -> Maybe Component.Control.Model
+getControllable model =
+  Component.getControllable model.components
 
 filterMapSpatial : (Component.Spatial.Model -> Component.Spatial.Model) -> Model -> Model
 filterMapSpatial func model =
@@ -83,6 +90,7 @@ view entity =
         Just <| viewable.func entity.components
       Nothing ->
         Nothing
+
 
 boundFloor : Window.Size -> Model -> Model
 boundFloor size model =

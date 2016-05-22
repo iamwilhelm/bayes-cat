@@ -4,11 +4,12 @@ import Collage exposing (..)
 import Color
 
 import Entity
+import Entity.Role
 import Component
 import Component.Spatial
 import Component.Corporeal
 import Component.Gravitate
-import Component.KeyboardControl
+import Component.Control
 import Vec exposing (..)
 
 import Debug
@@ -23,29 +24,41 @@ init id = {
     , Entity.corporeal (45, 45) Color.orange
     , Entity.viewable view
     , Entity.gravitate Component.Gravitate.ToEarth
-    --, Entity.controllable reduce
+    , Entity.controllable Entity.Role.Cat
     ]
   }
 
 -- update
 
 type Msg =
-    Move Vec.Vec
+    Move MsgDirection
   | Kill
 
+type MsgDirection =
+    Up
+  | Down
+  | Left
+  | Right
+
 reduce : Msg -> Entity.Model -> Entity.Model
-reduce action model =
-  case action of
-    Move (x, y) ->
-      model
+reduce msg model =
+  case msg of
+    Move direction ->
+      reduceMove direction model
     Kill ->
       model
 
-keyboard : Int -> Msg
-keyboard key =
-  case key of
-    _ ->
-      Move (0, 10)
+reduceMove : MsgDirection -> Entity.Model -> Entity.Model
+reduceMove direction model =
+  case direction of
+    Up ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (0, 100)) model
+    Down ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (0, -150)) model
+    Left ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (-50, 0)) model
+    Right ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (50, 0)) model
 
 -- view
 

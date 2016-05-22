@@ -17,10 +17,9 @@ import Html exposing (..)
 import Html.App as App
 
 import Entity
+import Entity.Role
 import Entity.Egg
 import Entity.Cat
-
-import Component.KeyboardControl
 
 import System.Physics
 import System.Control
@@ -66,7 +65,8 @@ map func model =
 type Msg =
     SizeChange Window.Size
   | Tick Float
-  | Player Component.KeyboardControl.Msg
+  | Player Entity.Cat.Msg
+  | Egg Entity.Egg.Msg
   | NoOp
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -79,12 +79,16 @@ update msg model =
         { model | size = size } ! []
       Tick dt ->
         step dt model ! []
-      Player controlMsg ->
-        let
-          -- TODO should reduce only return effects?
-          newEntities = System.Control.byKeyboard controlMsg model.entities
-        in
-          { model | entities = newEntities } ! []
+      Player catMsg ->
+        { model |
+          entities =
+            System.Control.reduceMap Entity.Role.Cat (Entity.Cat.reduce catMsg) model.entities
+        } ! []
+      Egg eggMsg ->
+        { model |
+          entities =
+            System.Control.reduceMap Entity.Role.Egg (Entity.Egg.reduce eggMsg) model.entities
+        } ! []
       NoOp ->
         (model, Cmd.none)
 
@@ -131,13 +135,13 @@ keyboardRouter : Bool -> Keyboard.KeyCode -> Msg
 keyboardRouter isDown keyCode =
   case (Char.fromCode keyCode) of
     'W' ->
-      Player Component.KeyboardControl.Up
+      Player <| Entity.Cat.Move Entity.Cat.Up
     'S' ->
-      Player  Component.KeyboardControl.Down
+      Player <| Entity.Cat.Move Entity.Cat.Down
     'A' ->
-      Player Component.KeyboardControl.Left
+      Player <| Entity.Cat.Move Entity.Cat.Left
     'D' ->
-      Player Component.KeyboardControl.Right
+      Player <| Entity.Cat.Move Entity.Cat.Right
     _ ->
       NoOp
 
