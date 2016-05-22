@@ -101,7 +101,7 @@ boundFloor size model =
     in
       if Vec.y space.pos < -(h / 2) then
         space
-        |> Component.Spatial.vel (Vec.neg space.vel .* 0.9)
+        |> Component.Spatial.vel ((Vec.x space.vel, -(Vec.y space.vel)) .* 0.9)
         |> Component.Spatial.pos (Vec.x space.pos, -(h / 2))
       else
         space
