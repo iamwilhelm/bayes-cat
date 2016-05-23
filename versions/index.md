@@ -1,0 +1,28 @@
+---
+layout: page
+title:  "Versions"
+date:   2016-05-22 03:24:15 -0700
+categories: releases
+---
+
+# Bayes-cat
+
+The repo is a simple game about cats knocking down things in a house. It's an
+exercise to write a 2D game using an Entity Component System in a pure
+functional language called Elm.
+
+An ongoing log of different versions
+
+### [v0.0.3 - 05/22/2016](v0.0.3)
+
+- Control System for controllable entities
+- Use W, A, S, D to move the bouncing cat around
+
+### [v0.0.2 - 05/17/2016](v0.0.2)
+
+- New Entity Component System
+- Gravity component available for different planets
+- Newtonian movements
+
+[v0.0.3][/versions/v0.0.3/index.html]
+[v0.0.2][/versions/v0.0.2/index.html]
