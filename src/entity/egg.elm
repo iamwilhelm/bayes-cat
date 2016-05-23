@@ -4,6 +4,7 @@ import Collage exposing (..)
 import Color
 
 import Entity
+import Entity.Role
 import Component
 import Component.Gravitate
 import Vec exposing (..)
@@ -18,8 +19,8 @@ init id = {
   , components = [
       Entity.spatial 10 (0, 0)
     , Entity.corporeal (35, 35) Color.gray
-    , Entity.viewable view
     , Entity.gravitate Component.Gravitate.ToMoon
+    , Entity.viewable Entity.Role.Egg
     ]
   }
 
@@ -39,17 +40,18 @@ reduce action model =
 
 -- view
 
-view : List Component.Model -> Form
-view components =
+view : Entity.Model -> Maybe Form
+view entity =
   let
-    maybeSpace = Component.getSpatial components
-    maybeCorp = Component.getCorporeal components
+    maybeSpace = Component.getSpatial entity.components
+    maybeCorp = Component.getCorporeal entity.components
   in
     case (maybeSpace, maybeCorp) of
       (Just space, Just corp) ->
-        move space.pos
-        <| group [
-          filled corp.color <| circle ((fst corp.dim) / 2)
-        ]
+        Just
+        <| move space.pos
+          <| group [
+            filled corp.color <| circle ((fst corp.dim) / 2)
+          ]
       _ ->
-        group []
+        Nothing

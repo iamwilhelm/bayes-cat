@@ -23,6 +23,7 @@ import Entity.Cat
 
 import System.Physics
 import System.Control
+import System.View
 --import System.Collision
 --import Viewport
 
@@ -110,7 +111,7 @@ view model =
     [
       toHtml
       <| Collage.collage w' h'
-      <| List.filterMap Entity.view model.entities
+      <| List.filterMap System.View.render model.entities
     ]
 
 ----------------- Subscriptions

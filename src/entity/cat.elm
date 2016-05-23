@@ -21,9 +21,9 @@ init id = {
   , components = [
       Entity.spatial 50 (100, 0)
     , Entity.corporeal (45, 45) Color.orange
-    , Entity.viewable view
     , Entity.gravitate Component.Gravitate.ToEarth
     , Entity.controllable Entity.Role.Cat
+    , Entity.viewable Entity.Role.Cat
     ]
   }
 
@@ -61,22 +61,23 @@ reduceMove direction model =
 
 -- view
 
-view : List Component.Model -> Form
-view components =
+view : Entity.Model -> Maybe Form
+view entity =
   let
-    maybeSpace = Component.getSpatial components
-    maybeCorp = Component.getCorporeal components
+    maybeSpace = Component.getSpatial entity.components
+    maybeCorp = Component.getCorporeal entity.components
   in
     case (maybeSpace, maybeCorp) of
       (Just space, Just corp) ->
-        move space.pos
-        <| group [
-            filled corp.color <| circle ((fst corp.dim) / 2)
-          , viewLeftEar corp
-          , viewRightEar corp
-          ]
+        Just
+        <| move space.pos
+          <| group [
+              filled corp.color <| circle ((fst corp.dim) / 2)
+            , viewLeftEar corp
+            , viewRightEar corp
+            ]
       _ ->
-        group []
+        Nothing
 
 viewLeftEar : Component.Corporeal.Model -> Form
 viewLeftEar corp =

@@ -1,4 +1,4 @@
-module Component.Controllable exposing (..)
+module Component.Viewable exposing (..)
 
 import Entity.Role
 

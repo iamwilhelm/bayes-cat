@@ -7,6 +7,7 @@ import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
+import Component.Viewable
 import Component.Controllable
 
 type Model =
@@ -14,18 +15,8 @@ type Model =
   | CorporealType Component.Corporeal.Model
   | LabelType Component.Label.Model
   | GravitateType Component.Gravitate.Model
-  | ViewableType ViewableModel
+  | ViewableType Component.Viewable.Model
   | ControllableType Component.Controllable.Model
-
-{-| A component that renders the entity's view method
-
-NOTE: Reason why Component declarations is in Component because
-a view component refers back to the component model itself, as well
-as a component containing the different types of components
--}
-type alias ViewableModel = {
-    func : List Model -> Form
-  }
 
 getSpatial : List Model -> Maybe Component.Spatial.Model
 getSpatial components =
@@ -60,12 +51,12 @@ getGravitate components =
   ) components
   |> List.head
 
-getViewable : List Model -> Maybe ViewableModel
+getViewable : List Model -> Maybe Component.Viewable.Model
 getViewable components =
   List.filterMap (\component ->
     case component of
-      ViewableType exec ->
-        Just exec
+      ViewableType viewable ->
+        Just viewable
       _ ->
         Nothing
   ) components

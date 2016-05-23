@@ -10,6 +10,7 @@ import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
+import Component.Viewable
 import Component.Controllable
 
 import Vec exposing (..)
@@ -40,9 +41,9 @@ gravitate : Component.Gravitate.Planet -> Component.Model
 gravitate planet =
   Component.GravitateType <| Component.Gravitate.init planet
 
-viewable : (List Component.Model -> Form) -> Component.Model
-viewable func =
-  Component.ViewableType { func = func }
+viewable : Entity.Role.Name -> Component.Model
+viewable role =
+  Component.ViewableType <| Component.Viewable.init role
 
 controllable : Entity.Role.Name -> Component.Model
 controllable role =
@@ -62,7 +63,7 @@ getGravitate : Model -> Maybe Component.Gravitate.Model
 getGravitate model =
   Component.getGravitate model.components
 
-getViewable : Model -> Maybe Component.ViewableModel
+getViewable : Model -> Maybe Component.Viewable.Model
 getViewable model =
   Component.getViewable model.components
 
@@ -79,18 +80,6 @@ filterMapCorporeal func model =
   { model | components = Component.filterMapCorporeal func model.components }
 
 -- system calls
-
-view : Model -> Maybe Form
-view entity =
-  let
-    maybeViewable = getViewable entity
-  in
-    case maybeViewable of
-      Just viewable ->
-        Just <| viewable.func entity.components
-      Nothing ->
-        Nothing
-
 
 boundFloor : Window.Size -> Model -> Model
 boundFloor size model =
