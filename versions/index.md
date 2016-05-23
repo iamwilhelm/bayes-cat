@@ -32,8 +32,8 @@ An ongoing log of different versions
 - Gravity component available for different planets
 - Newtonian movements
 
-[v0.0.3]: /versions/v0.0.3/index.html
-[v0.0.2]: /versions/v0.0.2/index.html
+[v0.0.3]: /bayes-cat/versions/v0.0.3/index.html
+[v0.0.2]: /bayes-cat/versions/v0.0.2/index.html
 
 [repo]: https://github.com/iamwilhelm/bayes-cat
 [zipball]: https://github.com/iamwilhelm/bayes-cat/zipball/master
