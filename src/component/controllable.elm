@@ -1,4 +1,4 @@
-module Component.Control exposing (..)
+module Component.Controllable exposing (..)
 
 import Entity.Role
 import Vec exposing (..)

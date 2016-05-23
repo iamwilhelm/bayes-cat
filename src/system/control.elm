@@ -5,7 +5,7 @@ import Maybe exposing (andThen)
 import Entity
 import Entity.Role
 
-import Component.Control
+import Component.Controllable
 
 {-| system control's job is to look for all entities that are controllable
  and execute its control component. What the control component does, is
@@ -20,7 +20,7 @@ control role messagedReducer entity =
     Nothing ->
       entity
 
-isRole : Entity.Role.Name -> Component.Control.Model -> Maybe Component.Control.Model
+isRole : Entity.Role.Name -> Component.Controllable.Model -> Maybe Component.Controllable.Model
 isRole role ctrl =
   if ctrl.role == role then
     Just ctrl

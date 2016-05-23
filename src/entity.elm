@@ -10,7 +10,7 @@ import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
-import Component.Control
+import Component.Controllable
 
 import Vec exposing (..)
 import Debug
@@ -46,7 +46,7 @@ viewable func =
 
 controllable : Entity.Role.Name -> Component.Model
 controllable role =
-  Component.ControllableType { role = role }
+  Component.ControllableType <| Component.Controllable.init role
 
 -- accessors
 
@@ -66,7 +66,7 @@ getViewable : Model -> Maybe Component.ViewableModel
 getViewable model =
   Component.getViewable model.components
 
-getControllable : Model -> Maybe Component.Control.Model
+getControllable : Model -> Maybe Component.Controllable.Model
 getControllable model =
   Component.getControllable model.components
 

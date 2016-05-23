@@ -7,7 +7,7 @@ import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
-import Component.Control
+import Component.Controllable
 
 type Model =
     SpatialType Component.Spatial.Model
@@ -15,7 +15,7 @@ type Model =
   | LabelType Component.Label.Model
   | GravitateType Component.Gravitate.Model
   | ViewableType ViewableModel
-  | ControllableType Component.Control.Model
+  | ControllableType Component.Controllable.Model
 
 {-| A component that renders the entity's view method
 
@@ -71,7 +71,7 @@ getViewable components =
   ) components
   |> List.head
 
-getControllable : List Model -> Maybe Component.Control.Model
+getControllable : List Model -> Maybe Component.Controllable.Model
 getControllable components =
   List.filterMap (\component ->
     case component of

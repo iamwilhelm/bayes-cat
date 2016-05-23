@@ -9,7 +9,6 @@ import Component
 import Component.Spatial
 import Component.Corporeal
 import Component.Gravitate
-import Component.Control
 import Vec exposing (..)
 
 import Debug
