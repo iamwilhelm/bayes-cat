@@ -14,7 +14,7 @@ import Component.Controllable
 -}
 control : Entity.Role.Name -> (Entity.Model -> Entity.Model) -> Entity.Model -> Entity.Model
 control role messagedReducer entity =
-  case (Entity.getControllable entity `andThen` isRole Entity.Role.Cat) of
+  case (Entity.getControllable entity `andThen` isRole role) of
     Just ctrl ->
       messagedReducer entity
     Nothing ->

@@ -96,7 +96,7 @@ update msg model =
       Player catMsg ->
         map (System.Control.control Entity.Role.Cat (Entity.Cat.reduce catMsg)) model ! []
       Egg eggMsg ->
-        map (System.Control.control Entity.Role.Egg (Entity.Egg.reduce eggMsg)) model ! []
+        map (Entity.Egg.reduce eggMsg) model ! []
       NoOp ->
         model ! []
 

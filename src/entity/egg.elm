@@ -41,14 +41,10 @@ reduce : Msg -> Entity.Model -> Entity.Model
 reduce action model =
   case action of
     Open id ->
-      let
-        a = Debug.log "model.id" model.id
-        b = Debug.log "id" id
-      in
-      --if model.id == id then
+      if model.id == id then
         Entity.filterMapCorporeal (Component.Corporeal.color Color.blue) model
-      --else
-      --  model
+      else
+        model
     Close id ->
       if model.id == id then
         Entity.filterMapCorporeal (Component.Corporeal.color Color.gray) model
