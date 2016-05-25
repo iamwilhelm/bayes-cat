@@ -80,11 +80,13 @@ getCollidable : Model -> Maybe Component.Collidable.Model
 getCollidable model =
   Component.getCollidable model.components
 
-getCollidablePair : Model -> Model -> (Maybe Component.Collidable.Model, Maybe Component.Collidable.Model)
-getCollidablePair self other =
-  ( Component.getCollidable self.components
-  , Component.getCollidable other.components
-  )
+getCollidablePair : (Model, Model) -> Maybe (Component.Collidable.Model, Component.Collidable.Model)
+getCollidablePair (self, other) =
+  case (Component.getCollidable self.components, Component.getCollidable other.components) of
+    (Just selfColl, Just otherColl) ->
+      Just (selfColl, otherColl)
+    _ ->
+      Nothing
 
 filterMapSpatial : (Component.Spatial.Model -> Component.Spatial.Model) -> Model -> Model
 filterMapSpatial func model =

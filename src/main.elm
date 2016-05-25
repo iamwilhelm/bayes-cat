@@ -7,10 +7,12 @@ import Task
 import Char
 
 import Time exposing (Time)
+import List.Extra exposing (pairs)
 
 import Collage
 import Element exposing (..)
 import Color exposing (Color)
+import Maybe exposing (andThen)
 import Text
 
 import Html exposing (..)
@@ -56,21 +58,10 @@ map : (Entity.Model -> Entity.Model) -> Model -> Model
 map func model =
   { model | entities = List.map func model.entities }
 
--- TODO not implemented
-pairMap : (Entity.Model -> Entity.Model -> a) -> Model -> Model
-pairMap func model =
-  { model | entities = model.entities }
-
 foldl : (Entity.Model -> b -> b) -> b -> Model -> b
 foldl func acc model =
   List.foldl func acc model.entities
 
-pairs : List a -> List (a, a)
-pairs elements =
-  List.concat
-  <| List.indexedMap (\index elem ->
-      List.map2 (,) (List.repeat ((List.length elements) - 1 - index) elem) (List.drop (index + 1) elements)
-    ) elements
 
 -------------- Update methods
 
@@ -114,26 +105,12 @@ step dt model =
 -- TODO should filterMap after pairMap?
 effects : Float -> Model -> List (Cmd Msg)
 effects dt model =
-  let
-    stuff = List.filterMap (System.Collision.detect routeInteraction) (pairs model.entities)
-  in
-    stuff
+  List.filterMap (System.Collision.detect interact) (pairs model.entities)
 
 -- interactions
 
-routeInteraction : (Entity.Model, Entity.Model) -> Maybe (Cmd Msg)
-routeInteraction (self, other) =
-  case (Entity.getCollidablePair self other) of
-    (Just selfColl, Just otherColl) ->
-      Just <| Cmd.batch [
-          commandsForInteraction (selfColl.role, self) (otherColl.role, other)
-        , commandsForInteraction (otherColl.role, other) (selfColl.role, self)
-        ]
-    _ ->
-      Nothing
-
-commandsForInteraction : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
-commandsForInteraction (role1, entity1) (role2, entity2) =
+interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
+interact (role1, entity1) (role2, entity2) =
   case role1 of
     Entity.Role.Cat ->
       Cmd.map Player <| Entity.Cat.interact (role1, entity1) (role2, entity2)

@@ -1,23 +1,32 @@
 module System.Collision exposing (..)
 
+import Maybe exposing (andThen)
+
 import Vec exposing (..)
 
 import Entity
 import Entity.Role
-import Entity.Cat
-import Entity.Egg
 
 import Component
 import Component.Spatial
+import Component.Collidable
 
 type alias Range = (Float, Float)
 
-detect : ((Entity.Model, Entity.Model) -> Maybe (Cmd msg)) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
-detect router (self, other) =
+detect : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
+detect interactor (self, other) =
   if touching self other then
-    router (self, other)
+    Entity.getCollidablePair (self, other) `andThen`
+      batchInteractions interactor (self, other)
   else
     Nothing
+
+batchInteractions : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> (Component.Collidable.Model, Component.Collidable.Model) -> Maybe (Cmd msg)
+batchInteractions interactor (self, other) (selfColl, otherColl) =
+  Just <| Cmd.batch [
+    interactor (selfColl.role, self) (otherColl.role, other)
+  , interactor (otherColl.role, other) (selfColl.role, self)
+  ]
 
 collide : Entity.Model -> Entity.Model -> Entity.Model
 collide self other =
