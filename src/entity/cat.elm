@@ -1,6 +1,8 @@
 module Entity.Cat exposing (..)
 
+import Basics.Extra exposing (never)
 import Collage exposing (..)
+import Task
 import Color
 
 import Entity
@@ -47,7 +49,7 @@ reduce msg model =
     Move direction ->
       reduceMove direction model
     Grow ->
-      Entity.filterMapCorporeal (Component.Corporeal.grow 5) model
+      Entity.filterMapCorporeal (Component.Corporeal.color Color.red) model
     NoOp ->
       model
 
@@ -71,14 +73,10 @@ interact (selfRole, self) (otherRole, other) =
   let
     result = case otherRole of
       Entity.Role.Egg ->
-        let
-          result = Cmd.map (\_ -> Grow) Cmd.none
-          _ = Debug.log "cat egg" result
-        in
-          result
+        Task.perform never identity (Task.succeed Grow)
       _ ->
-        Cmd.map (\_ -> NoOp) Cmd.none
-    _ = Debug.log "interact"
+        Task.perform never identity (Task.succeed NoOp)
+    _ = Debug.log "interact cat" result
   in
     result
 

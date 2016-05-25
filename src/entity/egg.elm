@@ -1,6 +1,8 @@
 module Entity.Egg exposing (..)
 
+import Basics.Extra exposing (never)
 import Collage exposing (..)
+import Task
 import Color
 
 import Entity
@@ -39,10 +41,14 @@ reduce : Msg -> Entity.Model -> Entity.Model
 reduce action model =
   case action of
     Open id ->
-      if model.id == id then
+      let
+        a = Debug.log "model.id" model.id
+        b = Debug.log "id" id
+      in
+      --if model.id == id then
         Entity.filterMapCorporeal (Component.Corporeal.color Color.blue) model
-      else
-        model
+      --else
+      --  model
     Close id ->
       if model.id == id then
         Entity.filterMapCorporeal (Component.Corporeal.color Color.gray) model
@@ -56,11 +62,15 @@ reduce action model =
 -- what will other entities do to egg?
 interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
 interact (selfRole, self) (otherRole, other) =
-  case otherRole of
-    Entity.Role.Cat ->
-      Cmd.map (\_ -> Open self.id) Cmd.none
-    Entity.Role.Egg ->
-      Cmd.map (\_ -> Close self.id) Cmd.none
+  let
+    result = case otherRole of
+      Entity.Role.Cat ->
+        Task.perform never identity (Task.succeed (Open self.id))
+      Entity.Role.Egg ->
+        Task.perform never identity (Task.succeed (Close self.id))
+    _ = Debug.log "interact egg" self.id
+  in
+    result
 
 -- view
 
