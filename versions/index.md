@@ -21,6 +21,12 @@ You can download the edge version:
 
 An ongoing log of different versions
 
+### [v0.0.4 - 05/25/2016][v0.0.4]
+
+- Added Collision System
+- can use interactions at top level and in the entities.
+- when you move the cat to the bouncing eggs, they change color
+
 ### [v0.0.3 - 05/22/2016][v0.0.3]
 
 - Control System for controllable entities
@@ -32,6 +38,7 @@ An ongoing log of different versions
 - Gravity component available for different planets
 - Newtonian movements
 
+[v0.0.4]: /bayes-cat/versions/v0.0.4/index.html
 [v0.0.3]: /bayes-cat/versions/v0.0.3/index.html
 [v0.0.2]: /bayes-cat/versions/v0.0.2/index.html
 
