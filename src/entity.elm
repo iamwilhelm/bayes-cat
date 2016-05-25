@@ -12,6 +12,7 @@ import Component.Label
 import Component.Gravitate
 import Component.Viewable
 import Component.Controllable
+import Component.Collidable
 
 import Vec exposing (..)
 import Debug
@@ -49,6 +50,10 @@ controllable : Entity.Role.Name -> Component.Model
 controllable role =
   Component.ControllableType <| Component.Controllable.init role
 
+collidable : Entity.Role.Name -> Component.Model
+collidable role =
+  Component.CollidableType <| Component.Collidable.init role
+
 -- accessors
 
 getSpatial : Model -> Maybe Component.Spatial.Model
@@ -70,6 +75,16 @@ getViewable model =
 getControllable : Model -> Maybe Component.Controllable.Model
 getControllable model =
   Component.getControllable model.components
+
+getCollidable : Model -> Maybe Component.Collidable.Model
+getCollidable model =
+  Component.getCollidable model.components
+
+getCollidablePair : Model -> Model -> (Maybe Component.Collidable.Model, Maybe Component.Collidable.Model)
+getCollidablePair self other =
+  ( Component.getCollidable self.components
+  , Component.getCollidable other.components
+  )
 
 filterMapSpatial : (Component.Spatial.Model -> Component.Spatial.Model) -> Model -> Model
 filterMapSpatial func model =

@@ -18,7 +18,7 @@ cull input entityListModel =
     { entityListModel |
       entities = List.filter (\(id, entity) ->
           exemptions entity
-          || Collision.withinBounds (top, right, bottom, left) entity
+          || System.Collision.inside (top, right, bottom, left) entity
         ) entities
     }
 

@@ -1,68 +1,24 @@
 import Html exposing (..)
 
 import Task exposing (Task)
-import Signal
 import Time
 import Window
 
-type alias Model =
-  { count : Int
-  , message : String
-  }
+import Debug
 
-init : Model
-init =
-  { count = 0
-  , message = ""
-  }
-
-
-type Action = Tick | Shout String
-
-mb = Signal.mailbox (Shout "")
-
-empty = Task.succeed ()
-
-msg addr i =
-  Signal.send addr (Shout ("We've got "++(toString i)))
-
-update address action model =
-  case action of
-    Tick ->
+pairs : List a -> List (a, a)
+pairs elements =
+  List.concat
+  <| List.indexedMap (\index elem ->
       let
-          model' = { model | count = model.count+1 }
-          task =
-            if model'.count%5 == 0 then
-              msg address model'.count
-            else
-              empty
+        rest = List.drop (index + 1) elements
+        restLen = (List.length elements) - 1 - index
       in
-        (model', task)
-    Shout s ->
-      (Model model.count s, empty)
-
-
-
-view size model =
-  div []
-    [ div [] [text <| toString model.count]
-    , div [] [text model.message]
-    , div [] [text <| toString size]
-    ]
-
-
-input =
-  Signal.merge (Signal.map (always Tick) <| Time.fps 1) mb.signal
-
-state_and_tasks =
-  Signal.foldp (\a (m, _) -> update mb.address a m) (init, empty) input
-
-
+        List.map2 (,) (List.repeat restLen elem) rest
+    ) elements
 
 main =
-  Signal.map fst state_and_tasks
-  |> Signal.map2 view Window.dimensions
-
-
-port tasks : Signal (Task x ())
-port tasks = Signal.map snd state_and_tasks
+  let
+    _ = Debug.log "result: " <| pairs [1]
+  in
+    div [] [text "hello"]

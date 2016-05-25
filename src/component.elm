@@ -9,6 +9,7 @@ import Component.Label
 import Component.Gravitate
 import Component.Viewable
 import Component.Controllable
+import Component.Collidable
 
 type Model =
     SpatialType Component.Spatial.Model
@@ -17,6 +18,7 @@ type Model =
   | GravitateType Component.Gravitate.Model
   | ViewableType Component.Viewable.Model
   | ControllableType Component.Controllable.Model
+  | CollidableType Component.Collidable.Model
 
 getSpatial : List Model -> Maybe Component.Spatial.Model
 getSpatial components =
@@ -68,6 +70,17 @@ getControllable components =
     case component of
       ControllableType ctrl ->
         Just ctrl
+      _ ->
+        Nothing
+  ) components
+  |> List.head
+
+getCollidable : List Model -> Maybe Component.Collidable.Model
+getCollidable components =
+  List.filterMap (\component ->
+    case component of
+      CollidableType collide ->
+        Just collide
       _ ->
         Nothing
   ) components

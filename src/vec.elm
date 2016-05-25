@@ -35,6 +35,7 @@ dist (x, y) = sqrt <| x * x + y * y
 mulS : Vec -> Float -> Vec
 mulS (x, y) a = (a * x, a * y)
 
+-- TODO change order of ops to Float -> Vec -> Vec
 (.*) : Vec -> Float -> Vec
 (.*) = mulS
 infixr 7 .*

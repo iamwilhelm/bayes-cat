@@ -24,6 +24,7 @@ init id = {
     , Entity.gravitate Component.Gravitate.ToEarth
     , Entity.controllable Entity.Role.Cat
     , Entity.viewable Entity.Role.Cat
+    , Entity.collidable Entity.Role.Cat
     ]
   }
 
@@ -31,7 +32,8 @@ init id = {
 
 type Msg =
     Move MsgDirection
-  | Kill
+  | Grow
+  | NoOp
 
 type MsgDirection =
     Up
@@ -44,7 +46,9 @@ reduce msg model =
   case msg of
     Move direction ->
       reduceMove direction model
-    Kill ->
+    Grow ->
+      Entity.filterMapCorporeal (Component.Corporeal.grow 5) model
+    NoOp ->
       model
 
 reduceMove : MsgDirection -> Entity.Model -> Entity.Model
@@ -58,6 +62,25 @@ reduceMove direction model =
       Entity.filterMapSpatial (Component.Spatial.insertForce (-50, 0)) model
     Right ->
       Entity.filterMapSpatial (Component.Spatial.insertForce (50, 0)) model
+
+-- interaction
+
+-- what will other entities do to cat?
+interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
+interact (selfRole, self) (otherRole, other) =
+  let
+    result = case otherRole of
+      Entity.Role.Egg ->
+        let
+          result = Cmd.map (\_ -> Grow) Cmd.none
+          _ = Debug.log "cat egg" result
+        in
+          result
+      _ ->
+        Cmd.map (\_ -> NoOp) Cmd.none
+    _ = Debug.log "interact"
+  in
+    result
 
 -- view
 
