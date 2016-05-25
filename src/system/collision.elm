@@ -15,11 +15,7 @@ type alias Range = (Float, Float)
 detect : ((Entity.Model, Entity.Model) -> Maybe (Cmd msg)) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
 detect router (self, other) =
   if touching self other then
-    let
-      result = router (self, other)
-      _ = Debug.log "touching" result
-    in
-      result
+    router (self, other)
   else
     Nothing
 

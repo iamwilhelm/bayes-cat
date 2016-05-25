@@ -58,15 +58,11 @@ reduce action model =
 -- what will other entities do to egg?
 interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
 interact (selfRole, self) (otherRole, other) =
-  let
-    result = case otherRole of
-      Entity.Role.Cat ->
-        Task.perform never identity (Task.succeed (Open self.id))
-      Entity.Role.Egg ->
-        Task.perform never identity (Task.succeed (Close self.id))
-    _ = Debug.log "interact egg" self.id
-  in
-    result
+  case otherRole of
+    Entity.Role.Cat ->
+      Task.perform never identity (Task.succeed (Open self.id))
+    Entity.Role.Egg ->
+      Task.perform never identity (Task.succeed (Close self.id))
 
 -- view
 

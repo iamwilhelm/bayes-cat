@@ -125,13 +125,10 @@ routeInteraction : (Entity.Model, Entity.Model) -> Maybe (Cmd Msg)
 routeInteraction (self, other) =
   case (Entity.getCollidablePair self other) of
     (Just selfColl, Just otherColl) ->
-      let
-        forSelf = commandsForInteraction (selfColl.role, self) (otherColl.role, other)
-        forOther = commandsForInteraction (otherColl.role, other) (selfColl.role, self)
-        a = Debug.log "forSelf" forSelf
-        b = Debug.log "forOther" forOther
-      in
-        Just <| Cmd.batch [forSelf, forOther]
+      Just <| Cmd.batch [
+          commandsForInteraction (selfColl.role, self) (otherColl.role, other)
+        , commandsForInteraction (otherColl.role, other) (selfColl.role, self)
+        ]
     _ ->
       Nothing
 
@@ -139,11 +136,7 @@ commandsForInteraction : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, 
 commandsForInteraction (role1, entity1) (role2, entity2) =
   case role1 of
     Entity.Role.Cat ->
-      let
-        result = Cmd.map Player <| Entity.Cat.interact (role1, entity1) (role2, entity2)
-        _ = Debug.log "cmd for cat" result
-      in
-        result
+      Cmd.map Player <| Entity.Cat.interact (role1, entity1) (role2, entity2)
     Entity.Role.Egg ->
       Cmd.map Egg <| Entity.Egg.interact (role1, entity1) (role2, entity2)
 

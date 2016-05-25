@@ -70,15 +70,11 @@ reduceMove direction model =
 -- what will other entities do to cat?
 interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
 interact (selfRole, self) (otherRole, other) =
-  let
-    result = case otherRole of
-      Entity.Role.Egg ->
-        Task.perform never identity (Task.succeed Grow)
-      _ ->
-        Task.perform never identity (Task.succeed NoOp)
-    _ = Debug.log "interact cat" result
-  in
-    result
+  case otherRole of
+    Entity.Role.Egg ->
+      Task.perform never identity (Task.succeed Grow)
+    _ ->
+      Task.perform never identity (Task.succeed NoOp)
 
 -- view
 
