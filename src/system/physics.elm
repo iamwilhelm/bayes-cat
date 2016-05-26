@@ -31,10 +31,15 @@ newtonian : Float -> Entity.Model -> Entity.Model
 newtonian dt entity =
   Entity.filterMapSpatial (\space ->
     let
-      acc = Component.Spatial.totalAcc space
-      space2 = Component.Spatial.vel (space.vel |+ acc .* (dt / 10)) space
+      space2 = Component.Spatial.acc (Component.Spatial.totalAcc space) space
+      space3 = Component.Spatial.acc (Vec.clamp (fst space.velLimit) (snd space.velLimit) space2.acc) space2
+
+      space4 = Component.Spatial.vel (space.vel |+ ((space.acc |+ space3.acc) .* (0.5 * (dt / 10)))) space3
+      space5 = Component.Spatial.vel (Vec.clamp (fst space.accLimit) (snd space.accLimit) space4.vel) space4
+
+      space6 = Component.Spatial.pos (space5.pos |+ ((space.vel |+ space5.vel) .* (0.5 * (dt / 10)))) space5
     in
-      Component.Spatial.pos (space2.pos |+ ((space.vel |+ space2.vel) .* (0.5 * (dt / 10)))) space2
+      space6
   ) entity
 
 {-| Clears the forces in the entity, so we can calculate them from forces anew.

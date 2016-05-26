@@ -53,17 +53,18 @@ reduce msg model =
     NoOp ->
       model
 
+-- TODO should the actual force vector be declared in the controllable component?
 reduceMove : MsgDirection -> Entity.Model -> Entity.Model
 reduceMove direction model =
   case direction of
     Up ->
       Entity.filterMapSpatial (Component.Spatial.insertForce (0, 100)) model
     Down ->
-      Entity.filterMapSpatial (Component.Spatial.insertForce (0, -150)) model
+      Entity.filterMapSpatial (Component.Spatial.insertForce (0, -50)) model
     Left ->
-      Entity.filterMapSpatial (Component.Spatial.insertForce (-50, 0)) model
+      Entity.filterMapSpatial (Component.Spatial.insertForce (-75, 0)) model
     Right ->
-      Entity.filterMapSpatial (Component.Spatial.insertForce (50, 0)) model
+      Entity.filterMapSpatial (Component.Spatial.insertForce (75, 0)) model
 
 -- interaction
 

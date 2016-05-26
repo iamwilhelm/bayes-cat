@@ -4,10 +4,12 @@ import Vec exposing (..)
 
 type alias Model = {
     mass : Float
-  , forces : List Vec.Vec
-  , pos : Vec.Vec    -- in units
-  , vel : Vec.Vec    -- in units / centiseconds
-  , acc : Vec.Vec    -- in units / centiseconds ** 2
+  , forces : List Vec
+  , pos : Vec    -- in units
+  , vel : Vec    -- in units / centiseconds
+  , velLimit : (Vec, Vec)
+  , acc : Vec    -- in units / centiseconds ** 2
+  , accLimit : (Vec, Vec)
   , heading : Float
   }
 
@@ -17,7 +19,9 @@ init mass pos = {
   , forces = []
   , pos = pos
   , vel = (0, 0)
-  , acc = (0, 0) -- TODO unused. remove
+  , velLimit = ((-20, -20), (20, 20))
+  , acc = (0, 0)
+  , accLimit = ((-10, -10), (10, 10))
   , heading = 0
   }
 
@@ -47,4 +51,6 @@ foldForces func initVal model =
 
 totalAcc : Model -> Vec
 totalAcc model =
-  foldForces (\force total -> total |+ force ./ model.mass) model.acc model
+  foldForces (\force total ->
+    total |+ force ./ model.mass
+  ) model.acc model

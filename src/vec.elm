@@ -53,3 +53,9 @@ scale (sx, sy) (x, y) = (x * sx, y * sy)
 neg : Vec -> Vec
 neg (x, y) =
   (-x, -y)
+
+clamp : Vec -> Vec -> Vec -> Vec
+clamp min max v =
+  ( Basics.clamp (fst min) (fst max) (x v)
+  , Basics.clamp (snd min) (snd max) (y v)
+  )
