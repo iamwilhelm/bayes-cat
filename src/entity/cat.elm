@@ -21,7 +21,7 @@ init : Entity.ID -> Entity.Model
 init id = {
     id = id
   , components = [
-      Entity.spatial 50 (100, 0)
+      Entity.spatial 50 (100, 0) (0, 0)
     , Entity.corporeal (45, 45) Color.orange
     , Entity.gravitate Component.Gravitate.ToEarth
     , Entity.controllable Entity.Role.Cat

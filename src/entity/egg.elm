@@ -16,11 +16,11 @@ import Debug
 
 -- model
 
-init : Entity.ID -> Entity.Model
-init id = {
+init : Entity.ID -> Vec -> Vec -> Entity.Model
+init id pos vel = {
     id = id
   , components = [
-      Entity.spatial 10 (0, 0)
+      Entity.spatial 10 pos vel
     , Entity.corporeal (35, 35) Color.gray
     , Entity.gravitate Component.Gravitate.ToMoon
     , Entity.viewable Entity.Role.Egg

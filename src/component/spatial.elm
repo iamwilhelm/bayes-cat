@@ -13,12 +13,12 @@ type alias Model = {
   , heading : Float
   }
 
-init : Float -> Vec -> Model
-init mass pos = {
+init : Float -> Vec -> Vec -> Model
+init mass pos vel = {
     mass = mass
   , forces = []
   , pos = pos
-  , vel = (0, 0)
+  , vel = vel
   , velLimit = ((-20, -20), (20, 20))
   , acc = (0, 0)
   , accLimit = ((-10, -10), (10, 10))

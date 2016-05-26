@@ -44,10 +44,15 @@ init : (Model, Cmd Msg)
 init =
   ({
       entities = [
-        Entity.Cat.init 1
-      , Entity.Egg.init 2
+        Entity.Cat.init 0
+      , Entity.Egg.init 1 (-300, 100) (10, 0)
+      , Entity.Egg.init 2 (-200, 100) (5, 10)
+      , Entity.Egg.init 3 (-100, 100) (-10, -10)
+      , Entity.Egg.init 4 (100, 100) (10, -5)
+      , Entity.Egg.init 5 (200, 100) (2, 5)
+      , Entity.Egg.init 6 (300, 100) (-4, 2)
       ]
-    , nextEntityId = 3
+    , nextEntityId = 7
     , seed = Random.initialSeed 0
     , size = Window.Size 0 0
     }

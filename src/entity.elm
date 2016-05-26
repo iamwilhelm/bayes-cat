@@ -26,9 +26,9 @@ type alias Model = {
 
 -- component creation TODO Should move into Component?
 
-spatial : Float -> Vec -> Component.Model
-spatial mass pos =
-  Component.SpatialType <| Component.Spatial.init mass pos
+spatial : Float -> Vec -> Vec -> Component.Model
+spatial mass pos vel =
+  Component.SpatialType <| Component.Spatial.init mass pos vel
 
 corporeal : Vec -> Color.Color -> Component.Model
 corporeal dim color =
