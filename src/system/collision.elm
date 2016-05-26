@@ -1,4 +1,4 @@
-module System.Collision exposing (..)
+module System.Collision exposing (detect, touching, overlap)
 
 import Maybe exposing (andThen)
 
@@ -35,6 +35,7 @@ collide self other =
   ) self
 
 -- helper functions
+-- TODO should these be in a library called geometry? (but they can't refer to entity)
 
 overlap : Range -> Range -> Bool
 overlap (minA, maxA) (minB, maxB) =
