@@ -96,6 +96,7 @@ step dt model =
   --|> generateEggs input
   --|> withinViewport input
   ( map (Entity.boundFloor model.size)
+    >> map (Entity.boundWalls model.size)
     >> map (System.Physics.gravity dt)
     >> map (System.Physics.newtonian dt)
     >> map System.Physics.clearForces

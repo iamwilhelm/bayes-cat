@@ -112,3 +112,23 @@ boundFloor size model =
       else
         space
   ) model
+
+boundWalls : Window.Size -> Model -> Model
+boundWalls size model =
+  filterMapSpatial (\space ->
+    let
+      (w', h') = (size.width, size.height)
+      (w, h) = (toFloat w', toFloat h')
+    in
+      if Vec.x space.pos < -(w / 2) then
+        space
+        |> Component.Spatial.vel (-(Vec.x space.vel), Vec.y space.vel)
+        |> Component.Spatial.pos (-(w / 2), Vec.y space.pos)
+      else
+        if Vec.x space.pos > (w / 2) then
+          space
+          |> Component.Spatial.vel (-(Vec.x space.vel), Vec.y space.vel)
+          |> Component.Spatial.pos ((w / 2), Vec.y space.pos)
+        else
+          space
+  ) model
