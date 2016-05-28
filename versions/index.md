@@ -21,6 +21,10 @@ You can download the edge version:
 
 An ongoing log of different versions
 
+### [v0.0.5 - 05/27/2016][v0.0.5]
+
+- Fixed timestep problem where framerate affects physics simulation
+
 ### [v0.0.4 - 05/25/2016][v0.0.4]
 
 - Added Collision System
@@ -38,6 +42,7 @@ An ongoing log of different versions
 - Gravity component available for different planets
 - Newtonian movements
 
+[v0.0.5]: /bayes-cat/versions/v0.0.5/index.html
 [v0.0.4]: /bayes-cat/versions/v0.0.4/index.html
 [v0.0.3]: /bayes-cat/versions/v0.0.3/index.html
 [v0.0.2]: /bayes-cat/versions/v0.0.2/index.html
