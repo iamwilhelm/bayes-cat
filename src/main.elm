@@ -7,6 +7,7 @@ import Task
 import Char
 
 import Time exposing (Time)
+import Basics.Extra exposing (never)
 import List.Extra exposing (pairs)
 
 import Collage
@@ -33,11 +34,13 @@ import Debug
 
 -------------- Model methods
 
-type alias Model =
-  { entities : List Entity.Model
+type alias Model = {
+    entities : List Entity.Model
   , nextEntityId : Int
   , seed : Random.Seed
   , size : Window.Size
+  , accFrameTime : Float -- not used
+  , targetFrameRate : Float -- in ms
   }
 
 init : (Model, Cmd Msg)
@@ -55,6 +58,8 @@ init =
     , nextEntityId = 7
     , seed = Random.initialSeed 0
     , size = Window.Size 0 0
+    , accFrameTime = 0.0
+    , targetFrameRate = 1000 / 60.0
     }
   , Task.perform (\_ -> NoOp) SizeChange Window.size
   )
@@ -75,6 +80,7 @@ foldl func acc model =
 type Msg =
     SizeChange Window.Size
   | Tick Float
+  | Simulate Float
   | Player Entity.Cat.Msg
   | Egg Entity.Egg.Msg
   | NoOp
@@ -86,6 +92,8 @@ update msg model =
   in
     case msg of
       Tick dt ->
+        stablizeFrameRate dt model
+      Simulate dt ->
         (step dt model, Cmd.batch <| effects dt model)
       SizeChange size ->
         { model | size = size } ! []
@@ -95,6 +103,23 @@ update msg model =
         map (Entity.Egg.reduce eggMsg) model ! []
       NoOp ->
         model ! []
+
+{-| Stablizes the framerate.
+TODO only did semi-fixed timestep. Seems good enough for now.
+http://gafferongames.com/game-physics/fix-your-timestep/
+-}
+stablizeFrameRate : Float -> Model -> (Model, Cmd Msg)
+stablizeFrameRate frameTime model =
+  let
+    dt = min frameTime model.targetFrameRate
+  in
+    if frameTime <= 0.0 then
+      model ! []
+    else
+      model ! [
+        Task.perform never identity (Task.succeed (Tick <| frameTime - dt))
+      , Task.perform never identity (Task.succeed (Simulate dt))
+      ]
 
 step : Float -> Model -> Model
 step dt model =
