@@ -31,6 +31,7 @@ newtonian : Float -> Entity.Model -> Entity.Model
 newtonian dt entity =
   Entity.filterMapSpatial (\space ->
     let
+      -- TODO refactor spatial to clamp, so we can compose these functions
       space2 = Component.Spatial.acc (Component.Spatial.totalAcc space) space
       space3 = Component.Spatial.acc (Vec.clamp (fst space.velLimit) (snd space.velLimit) space2.acc) space2
 

@@ -28,11 +28,11 @@ batchInteractions interactor (self, other) (selfColl, otherColl) =
   , interactor (otherColl.role, other) (selfColl.role, self)
   ]
 
-collide : Entity.Model -> Entity.Model -> Entity.Model
-collide self other =
-  Entity.filterMapSpatial (\space ->
-    Component.Spatial.vel (Vec.neg space.vel) space
-  ) self
+--collide : Entity.Model -> Entity.Model -> Entity.Model
+--collide self other =
+--  Entity.filterMapSpatial (\space ->
+--    Component.Spatial.vel (Vec.neg space.vel) space
+--  ) self
 
 -- helper functions
 -- TODO should these be in a library called geometry? (but they can't refer to entity)
