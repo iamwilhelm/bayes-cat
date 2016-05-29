@@ -25,7 +25,7 @@ init id = {
     , Entity.corporeal (45, 45) Color.orange
     , Entity.gravitate Component.Gravitate.ToEarth
     , Entity.controllable Entity.Role.Cat
-    , Entity.viewable Entity.Role.Cat
+    , Entity.renderable Entity.Role.Cat
     , Entity.collidable Entity.Role.Cat
     ]
   }
@@ -50,7 +50,7 @@ reduce msg model =
       reduceMove direction model
     Grow ->
       Entity.filterMapCorporeal (Component.Corporeal.color Color.red) model
-    NoOp ->
+    _ ->
       model
 
 -- TODO should the actual force vector be declared in the controllable component?

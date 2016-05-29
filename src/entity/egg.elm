@@ -23,7 +23,7 @@ init id pos vel = {
       Entity.spatial 10 pos vel
     , Entity.corporeal (35, 35) Color.gray
     , Entity.gravitate Component.Gravitate.ToMoon
-    , Entity.viewable Entity.Role.Egg
+    , Entity.renderable Entity.Role.Egg
     , Entity.collidable Entity.Role.Egg
     ]
   }
@@ -50,7 +50,7 @@ reduce action model =
         Entity.filterMapCorporeal (Component.Corporeal.color Color.gray) model
       else
         model
-    NoOp ->
+    _ ->
       model
 
 -- interaction
@@ -63,6 +63,9 @@ interact (selfRole, self) (otherRole, other) =
       Task.perform never identity (Task.succeed (Open self.id))
     Entity.Role.Egg ->
       Task.perform never identity (Task.succeed (Close self.id))
+    _ ->
+      Task.perform never identity (Task.succeed NoOp)
+
 
 -- view
 

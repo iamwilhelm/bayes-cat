@@ -7,7 +7,7 @@ import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
-import Component.Viewable
+import Component.Renderable
 import Component.Controllable
 import Component.Collidable
 
@@ -16,7 +16,7 @@ type Model =
   | CorporealType Component.Corporeal.Model
   | LabelType Component.Label.Model
   | GravitateType Component.Gravitate.Model
-  | ViewableType Component.Viewable.Model
+  | RenderableType Component.Renderable.Model
   | ControllableType Component.Controllable.Model
   | CollidableType Component.Collidable.Model
 
@@ -53,12 +53,12 @@ getGravitate components =
   ) components
   |> List.head
 
-getViewable : List Model -> Maybe Component.Viewable.Model
-getViewable components =
+getRenderable : List Model -> Maybe Component.Renderable.Model
+getRenderable components =
   List.filterMap (\component ->
     case component of
-      ViewableType viewable ->
-        Just viewable
+      RenderableType renderable ->
+        Just renderable
       _ ->
         Nothing
   ) components

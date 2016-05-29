@@ -10,7 +10,7 @@ import Component.Spatial
 import Component.Corporeal
 import Component.Label
 import Component.Gravitate
-import Component.Viewable
+import Component.Renderable
 import Component.Controllable
 import Component.Collidable
 
@@ -42,9 +42,9 @@ gravitate : Component.Gravitate.Planet -> Component.Model
 gravitate planet =
   Component.GravitateType <| Component.Gravitate.init planet
 
-viewable : Entity.Role.Name -> Component.Model
-viewable role =
-  Component.ViewableType <| Component.Viewable.init role
+renderable: Entity.Role.Name -> Component.Model
+renderable role =
+  Component.RenderableType <| Component.Renderable.init role
 
 controllable : Entity.Role.Name -> Component.Model
 controllable role =
@@ -68,9 +68,9 @@ getGravitate : Model -> Maybe Component.Gravitate.Model
 getGravitate model =
   Component.getGravitate model.components
 
-getViewable : Model -> Maybe Component.Viewable.Model
-getViewable model =
-  Component.getViewable model.components
+getRenderable : Model -> Maybe Component.Renderable.Model
+getRenderable model =
+  Component.getRenderable model.components
 
 getControllable : Model -> Maybe Component.Controllable.Model
 getControllable model =

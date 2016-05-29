@@ -26,7 +26,7 @@ import Entity.Cat
 
 import System.Physics
 import System.Control
-import System.View
+import System.Renderer
 import System.Collision
 --import Viewport
 
@@ -147,6 +147,8 @@ interact (role1, entity1) (role2, entity2) =
       Cmd.map Player <| Entity.Cat.interact (role1, entity1) (role2, entity2)
     Entity.Role.Egg ->
       Cmd.map Egg <| Entity.Egg.interact (role1, entity1) (role2, entity2)
+    _ ->
+      Task.perform never identity (Task.succeed NoOp)
 
 ----------------- View methods
 
@@ -161,7 +163,7 @@ view model =
     [
       toHtml
       <| Collage.collage w' h'
-      <| List.filterMap System.View.render model.entities
+      <| List.filterMap System.Renderer.render model.entities
     ]
 
 ----------------- Subscriptions
