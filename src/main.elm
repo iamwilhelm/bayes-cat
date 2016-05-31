@@ -11,10 +11,7 @@ import Basics.Extra exposing (never)
 import List.Extra exposing (pairs)
 
 import Collage
-import Element exposing (..)
-import Color exposing (Color)
-import Maybe exposing (andThen)
-import Text
+import Element exposing (toHtml)
 
 import Html exposing (..)
 import Html.App as App
