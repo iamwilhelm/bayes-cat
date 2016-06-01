@@ -14,8 +14,16 @@ import Component.Controllable
 -}
 control : Entity.Role.Name -> (Entity.Model -> Entity.Model) -> Entity.Model -> Entity.Model
 control role messagedReducer entity =
-  case (Entity.getControllable entity `andThen` Component.Controllable.isRole role) of
-    Just ctrl ->
-      messagedReducer entity
-    Nothing ->
-      entity
+  Entity.getControllable entity
+    `andThen` Component.Controllable.isRole role
+    |> Maybe.map (\ctrl ->
+        if (ctrl.role == Entity.Role.Camera) then
+          let
+            _ = Debug.log "result entity" result
+            result = messagedReducer entity
+          in
+            result
+        else
+          messagedReducer entity
+      )
+    |> Maybe.withDefault entity

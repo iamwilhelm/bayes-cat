@@ -63,3 +63,9 @@ transform model =
   (uncurry Transform.translation <| model.pos) `multiply`
   (Transform.rotation model.heading) `multiply`
   (Transform.scale model.scale)
+
+invertedControlTransform : Model -> Transform
+invertedControlTransform model =
+  (uncurry Transform.translation <| Vec.neg model.pos) `multiply`
+  (Transform.rotation model.heading) `multiply`
+  (Transform.scale model.scale)

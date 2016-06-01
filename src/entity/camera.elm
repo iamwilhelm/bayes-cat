@@ -20,7 +20,7 @@ init : Entity.ID -> Entity.Model
 init id = {
     id = id
   , components = [
-      Component.spatial 10 (0, 0) (0, 0)
+      Component.spatial 100 (0, 0) (0, 0)
     , Component.corporeal (1, 1) Color.gray
     , Component.controllable Entity.Role.Camera
     ]
@@ -29,13 +29,56 @@ init id = {
 -- update
 
 type Msg =
-    NoOp
+    Move DirectionMsg
+  | Zoom ScaleMsg
+  | NoOp
+
+type DirectionMsg =
+    Up
+  | Down
+  | Left
+  | Right
+
+type ScaleMsg =
+    In
+  | Out
 
 reduce : Msg -> Entity.Model -> Entity.Model
 reduce msg model =
+  let
+    _ = Debug.log "camera reduce" msg
+  in
+    case msg of
+      Move direction ->
+        reduceMove direction model
+      Zoom scale ->
+        reduceZoom scale model
+      _ ->
+        model
+
+reduceMove : DirectionMsg -> Entity.Model -> Entity.Model
+reduceMove msg model =
   case msg of
-    NoOp ->
-      model
+    Up ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (0, 10)) model
+    Down ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (0, -10)) model
+    Left ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (-10, 0)) model
+    Right ->
+      Entity.filterMapSpatial (Component.Spatial.insertForce (10, 0)) model
+
+reduceZoom : ScaleMsg -> Entity.Model -> Entity.Model
+reduceZoom msg model =
+  case msg of
+    In ->
+      Entity.filterMapSpatial (\space ->
+        { space | scale = space.scale + 0.1 }
+      ) model
+    Out ->
+      Entity.filterMapSpatial (\space ->
+        { space | scale = space.scale - 0.1 }
+      ) model
 
 -- interact
 

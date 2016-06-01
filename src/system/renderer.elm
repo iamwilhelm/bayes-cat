@@ -12,11 +12,11 @@ import Entity.Egg
 import Component.Spatial
 import Component.Renderable
 
-render : Entity.Model -> Entity.Model -> Maybe Collage.Form
+render : Maybe Entity.Model -> Entity.Model -> Maybe Collage.Form
 render camera entity =
   let
     entityForms = Entity.getRenderable entity `andThen` renderEntity entity
-    tf = totalTransform entity
+    tf = totalTransform camera entity
   in
     Maybe.map (Collage.groupTransform tf) entityForms
 
@@ -32,9 +32,9 @@ renderEntity entity renderable =
     _ ->
       Nothing
 
-totalTransform : Entity.Model -> Transform
-totalTransform entity =
-  (w2c entity) `multiply` (e2w entity)
+totalTransform : Maybe Entity.Model -> Entity.Model -> Transform
+totalTransform camera entity =
+  (e2w entity) `multiply` (w2c camera)
 
 e2w : Entity.Model -> Transform
 e2w entity =
@@ -42,8 +42,8 @@ e2w entity =
   |> Maybe.map Component.Spatial.transform
   |> Maybe.withDefault Transform.identity
 
-w2c : Entity.Model -> Transform
+w2c : Maybe Entity.Model -> Transform
 w2c camera =
-  Entity.getSpatial camera
-  |> Maybe.map Component.Spatial.transform
+  camera `andThen` Entity.getSpatial
+  |> Maybe.map Component.Spatial.invertedControlTransform
   |> Maybe.withDefault Transform.identity

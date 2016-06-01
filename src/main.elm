@@ -35,7 +35,6 @@ import Debug
 
 type alias Model = {
     entities : List Entity.Model
-  , camera : Entity.Model
   , nextEntityId : Int
   , seed : Random.Seed
   , size : Window.Size
@@ -48,6 +47,7 @@ init =
   ({
       entities = [
         Entity.Cat.init 0
+      , Entity.Camera.init 1
       , Entity.Egg.init 11 (-300, 100) (10, 0)
       , Entity.Egg.init 12 (-200, 100) (5, 10)
       , Entity.Egg.init 13 (-100, 100) (-10, -10)
@@ -55,7 +55,6 @@ init =
       , Entity.Egg.init 15 (200, 100) (2, 5)
       , Entity.Egg.init 16 (300, 100) (-4, 2)
       ]
-    , camera = Entity.Camera.init 1
     , nextEntityId = 7
     , seed = Random.initialSeed 0
     , size = Window.Size 0 0
@@ -89,24 +88,21 @@ type Msg =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  let
-    _ = 3 --Debug.log "update msg: " msg
-  in
-    case msg of
-      Tick dt ->
-        stablizeFrameRate dt model
-      Simulate dt ->
-        (step dt model, Cmd.batch <| effects dt model)
-      SizeChange size ->
-        { model | size = size } ! []
-      Player catMsg ->
-        map (System.Control.control Entity.Role.Cat (Entity.Cat.reduce catMsg)) model ! []
-      Egg eggMsg ->
-        map (Entity.Egg.reduce eggMsg) model ! []
-      Camera cameraMsg ->
-        model ! []
-      NoOp ->
-        model ! []
+  case msg of
+    Tick dt ->
+      stablizeFrameRate dt model
+    Simulate dt ->
+      (step dt model, Cmd.batch <| effects dt model)
+    SizeChange size ->
+      { model | size = size } ! []
+    Player catMsg ->
+      map (System.Control.control Entity.Role.Cat (Entity.Cat.reduce catMsg)) model ! []
+    Egg eggMsg ->
+      map (Entity.Egg.reduce eggMsg) model ! []
+    Camera cameraMsg ->
+      map (System.Control.control Entity.Role.Camera (Entity.Camera.reduce cameraMsg)) model ! []
+    NoOp ->
+      model ! []
 
 {-| Stablizes the framerate.
 TODO only did semi-fixed timestep. Seems good enough for now.
@@ -161,11 +157,28 @@ view model =
   let
     (w', h') = (model.size.width, model.size.height)
     (w, h) = (toFloat w', toFloat h')
+    camera = getCamera model
     --_ = Debug.log "model in view" model
   in
     toHtml
     <| Collage.collage w' h'
-    <| List.filterMap (System.Renderer.render model.camera) model.entities
+    <| List.filterMap (System.Renderer.render camera) model.entities
+
+-- temp
+getCamera : Model -> Maybe Entity.Model
+getCamera model =
+  List.head (
+    List.filterMap (\entity ->
+      case (Entity.getControllable entity) of
+        Just ctrl ->
+          if ctrl.role == Entity.Role.Camera then
+            Just entity
+          else
+            Nothing
+        Nothing ->
+          Nothing
+    ) model.entities
+  )
 
 ----------------- Subscriptions
 
@@ -189,6 +202,18 @@ keyboardRouter isDown keyCode =
       Player <| Entity.Cat.Move Entity.Cat.Left
     'D' ->
       Player <| Entity.Cat.Move Entity.Cat.Right
+    'I' ->
+      Camera <| Entity.Camera.Move Entity.Camera.Up
+    'K' ->
+      Camera <| Entity.Camera.Move Entity.Camera.Down
+    'J' ->
+      Camera <| Entity.Camera.Move Entity.Camera.Left
+    'L' ->
+      Camera <| Entity.Camera.Move Entity.Camera.Right
+    'U' ->
+      Camera <| Entity.Camera.Zoom Entity.Camera.In
+    'O' ->
+      Camera <| Entity.Camera.Zoom Entity.Camera.Out
     _ ->
       NoOp
 
