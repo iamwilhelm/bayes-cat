@@ -1,6 +1,7 @@
 module Component exposing (..)
 
 import Collage exposing (..)
+import Color
 
 import Entity.Role
 import Component.Spatial
@@ -11,6 +12,8 @@ import Component.Renderable
 import Component.Controllable
 import Component.Collidable
 
+import Vec exposing (..)
+
 type Model =
     SpatialType Component.Spatial.Model
   | CorporealType Component.Corporeal.Model
@@ -19,6 +22,38 @@ type Model =
   | RenderableType Component.Renderable.Model
   | ControllableType Component.Controllable.Model
   | CollidableType Component.Collidable.Model
+
+-- component creation
+
+spatial : Float -> Vec -> Vec -> Model
+spatial mass pos vel =
+  SpatialType <| Component.Spatial.init mass pos vel
+
+corporeal : Vec -> Color.Color -> Model
+corporeal dim color =
+  CorporealType <| Component.Corporeal.init dim color
+
+label : String -> Color.Color -> Model
+label title color =
+  LabelType <| Component.Label.Model title color
+
+gravitate : Component.Gravitate.Planet -> Model
+gravitate planet =
+  GravitateType <| Component.Gravitate.init planet
+
+renderable: Entity.Role.Name -> Model
+renderable role =
+  RenderableType <| Component.Renderable.init role
+
+controllable : Entity.Role.Name -> Model
+controllable role =
+  ControllableType <| Component.Controllable.init role
+
+collidable : Entity.Role.Name -> Model
+collidable role =
+  CollidableType <| Component.Collidable.init role
+
+-- accessors
 
 getSpatial : List Model -> Maybe Component.Spatial.Model
 getSpatial components =

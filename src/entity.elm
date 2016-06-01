@@ -24,36 +24,6 @@ type alias Model = {
   , components : List Component.Model
   }
 
--- component creation TODO Should move into Component?
-
-spatial : Float -> Vec -> Vec -> Component.Model
-spatial mass pos vel =
-  Component.SpatialType <| Component.Spatial.init mass pos vel
-
-corporeal : Vec -> Color.Color -> Component.Model
-corporeal dim color =
-  Component.CorporealType <| Component.Corporeal.init dim color
-
-label : String -> Color.Color -> Component.Model
-label title color =
-  Component.LabelType <| Component.Label.Model title color
-
-gravitate : Component.Gravitate.Planet -> Component.Model
-gravitate planet =
-  Component.GravitateType <| Component.Gravitate.init planet
-
-renderable: Entity.Role.Name -> Component.Model
-renderable role =
-  Component.RenderableType <| Component.Renderable.init role
-
-controllable : Entity.Role.Name -> Component.Model
-controllable role =
-  Component.ControllableType <| Component.Controllable.init role
-
-collidable : Entity.Role.Name -> Component.Model
-collidable role =
-  Component.CollidableType <| Component.Collidable.init role
-
 -- accessors
 
 getSpatial : Model -> Maybe Component.Spatial.Model
