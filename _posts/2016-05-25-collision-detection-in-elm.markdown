@@ -137,6 +137,16 @@ event of a collision, not what the cat entity does to other entities. This is be
 the top-level `#interact` will tack on the `Cat` parent message on top, so all
 messages need to be about Cat.
 
+### Try the demo
+
+You can try the [v0.0.4 demo here][v0.0.4], and the [source is here][v0.0.4-src].
+
+wasd to move the cat around.
+
+When the cat hits an egg, the cat turns red, and the egg turns blue. When two
+eggs hit each other, they revert back to being gray.
+
+
 [quadtree]: http://gamedevelopment.tutsplus.com/tutorials/quick-tip-use-quadtrees-to-detect-likely-collisions-in-2d-space--gamedev-374
 [redux]: https://github.com/reactjs/redux
 [elm-architecture]: http://guide.elm-lang.org/architecture/index.html

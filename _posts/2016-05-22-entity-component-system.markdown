@@ -36,8 +36,15 @@ type alias Model = {
   }
 {% endhighlight %}
 
+### Try the demo
+
+You can try the [v0.0.3 demo here][v0.0.3], and the [source is here][v0.0.3-src].
+
+wasd to move the cat around.
 
 [anatomy-of-knockout]: https://www.chris-granger.com/2012/12/11/anatomy-of-a-knockout/
 [home]: https://iamwilhelm.github.io/bayes-cat
 [quasi-ecs]: https://gist.github.com/TheSeamau5/8d7fac9f1937f0bab317
 [hacky-ecs]: https://gist.github.com/TheSeamau5/ec9695232ae919185f4d
+[v0.0.3]: /bayes-cat/versions/v0.0.3/index.html
+[v0.0.3-src]: https://github.com/iamwilhelm/bayes-cat/tree/v0.0.3

@@ -44,4 +44,17 @@ stablizeFrameRate frameTime model =
       ]
 {% endhighlight %}
 
+### Try the demo
+
+You can try the [v0.0.5 demo here][v0.0.5], and the [source is here][v0.0.5-src].
+
+wasd to move the cat around.
+
+Known bugs:
+- There's jittering from the bounding floor and walls
+
+
 [fix-your-timestep]: http://gafferongames.com/game-physics/fix-your-timestep/
+
+[v0.0.5]: /bayes-cat/versions/v0.0.5/index.html
+[v0.0.5-src]: https://github.com/iamwilhelm/bayes-cat/tree/v0.0.5
