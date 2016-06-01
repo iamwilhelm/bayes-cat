@@ -12,11 +12,13 @@ import List.Extra exposing (pairs)
 
 import Collage
 import Element exposing (toHtml)
+import Transform exposing (Transform, multiply)
 
 import Html exposing (..)
 import Html.App as App
 
 import Entity
+import Entity.Camera
 import Entity.Role
 import Entity.Egg
 import Entity.Cat
@@ -33,6 +35,7 @@ import Debug
 
 type alias Model = {
     entities : List Entity.Model
+  , camera : Entity.Model
   , nextEntityId : Int
   , seed : Random.Seed
   , size : Window.Size
@@ -45,13 +48,14 @@ init =
   ({
       entities = [
         Entity.Cat.init 0
-      , Entity.Egg.init 1 (-300, 100) (10, 0)
-      , Entity.Egg.init 2 (-200, 100) (5, 10)
-      , Entity.Egg.init 3 (-100, 100) (-10, -10)
-      , Entity.Egg.init 4 (100, 100) (10, -5)
-      , Entity.Egg.init 5 (200, 100) (2, 5)
-      , Entity.Egg.init 6 (300, 100) (-4, 2)
+      , Entity.Egg.init 11 (-300, 100) (10, 0)
+      , Entity.Egg.init 12 (-200, 100) (5, 10)
+      , Entity.Egg.init 13 (-100, 100) (-10, -10)
+      , Entity.Egg.init 14 (100, 100) (10, -5)
+      , Entity.Egg.init 15 (200, 100) (2, 5)
+      , Entity.Egg.init 16 (300, 100) (-4, 2)
       ]
+    , camera = Entity.Camera.init 1
     , nextEntityId = 7
     , seed = Random.initialSeed 0
     , size = Window.Size 0 0
@@ -80,6 +84,7 @@ type Msg =
   | Simulate Float
   | Player Entity.Cat.Msg
   | Egg Entity.Egg.Msg
+  | Camera Entity.Camera.Msg
   | NoOp
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -98,6 +103,8 @@ update msg model =
         map (System.Control.control Entity.Role.Cat (Entity.Cat.reduce catMsg)) model ! []
       Egg eggMsg ->
         map (Entity.Egg.reduce eggMsg) model ! []
+      Camera cameraMsg ->
+        model ! []
       NoOp ->
         model ! []
 
@@ -156,12 +163,9 @@ view model =
     (w, h) = (toFloat w', toFloat h')
     --_ = Debug.log "model in view" model
   in
-    div []
-    [
-      toHtml
-      <| Collage.collage w' h'
-      <| List.filterMap System.Renderer.render model.entities
-    ]
+    toHtml
+    <| Collage.collage w' h'
+    <| List.filterMap (System.Renderer.render model.camera) model.entities
 
 ----------------- Subscriptions
 

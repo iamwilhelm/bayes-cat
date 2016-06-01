@@ -1,5 +1,6 @@
 module Component.Spatial exposing (..)
 
+import Transform exposing (Transform, multiply)
 import Vec exposing (..)
 
 type alias Model = {
@@ -11,6 +12,7 @@ type alias Model = {
   , acc : Vec    -- in units / centiseconds ** 2
   , accLimit : (Vec, Vec)
   , heading : Float
+  , scale : Float
   }
 
 init : Float -> Vec -> Vec -> Model
@@ -23,6 +25,7 @@ init mass pos vel = {
   , acc = (0, 0)
   , accLimit = ((-10, -10), (10, 10))
   , heading = 0
+  , scale = 1
   }
 
 pos : Vec -> Model -> Model
@@ -54,3 +57,9 @@ totalAcc model =
   foldForces (\force total ->
     total |+ force ./ model.mass
   ) model.acc model
+
+transform : Model -> Transform
+transform model =
+  (uncurry Transform.translation <| model.pos) `multiply`
+  (Transform.rotation model.heading) `multiply`
+  (Transform.scale model.scale)

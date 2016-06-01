@@ -14,6 +14,8 @@ import Component.Renderable
 import Component.Controllable
 import Component.Collidable
 
+import Transform exposing (Transform, multiply)
+
 import Vec exposing (..)
 import Debug
 

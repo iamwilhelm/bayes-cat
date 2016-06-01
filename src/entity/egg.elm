@@ -69,18 +69,11 @@ interact (selfRole, self) (otherRole, other) =
 
 -- view
 
-view : Entity.Model -> Maybe Form
+view : Entity.Model -> Maybe (List Form)
 view entity =
-  let
-    maybeSpace = Component.getSpatial entity.components
-    maybeCorp = Component.getCorporeal entity.components
-  in
-    case (maybeSpace, maybeCorp) of
-      (Just space, Just corp) ->
-        Just
-        <| move space.pos
-          <| group [
-            filled corp.color <| circle ((fst corp.dim) / 2)
-          ]
-      _ ->
-        Nothing
+  Entity.getCorporeal entity
+  |> Maybe.map (\corp ->
+    [
+      filled corp.color <| circle ((fst corp.dim) / 2)
+    ]
+  )
