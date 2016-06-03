@@ -39,8 +39,8 @@ type alias Model = {
   , nextEntityId : Int
   , seed : Random.Seed
   , size : Window.Size
-  , accFrameTime : Float -- not used
-  , targetFrameRate : Float -- in ms
+  , accFrameTime : Float -- frame time accumulator
+  , targetFrameRate : Float -- in ms (constant)
   }
 
 init : (Model, Cmd Msg)
@@ -81,7 +81,8 @@ foldl func acc model =
 -- need to express effects
 type Msg =
     SizeChange Window.Size
-  | Tick Float
+  | NewFrame Float
+  | Tick
   | Simulate Float
   | Player Entity.Cat.Msg
   | Egg Entity.Egg.Msg
@@ -91,8 +92,11 @@ type Msg =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Tick dt ->
-      stablizeFrameRate dt model
+    NewFrame dt ->
+      { model | accFrameTime = model.accFrameTime + dt }
+      ! [Task.perform never identity (Task.succeed Tick)]
+    Tick ->
+      stablizeFrameRate model
     Simulate dt ->
       (step dt model, Cmd.batch <| effects dt model)
     SizeChange size ->
@@ -107,20 +111,21 @@ update msg model =
       model ! []
 
 {-| Stablizes the framerate.
-TODO only did semi-fixed timestep. Seems good enough for now.
 http://gafferongames.com/game-physics/fix-your-timestep/
 -}
-stablizeFrameRate : Float -> Model -> (Model, Cmd Msg)
-stablizeFrameRate frameTime model =
+stablizeFrameRate : Model -> (Model, Cmd Msg)
+stablizeFrameRate model =
   let
-    dt = min frameTime model.targetFrameRate
+    dt = min model.accFrameTime model.targetFrameRate
   in
-    if frameTime <= 0.0 then
+    if model.accFrameTime < model.targetFrameRate then
       model ! []
     else
-      model ! [
-        Task.perform never identity (Task.succeed (Tick <| frameTime - dt))
-      , Task.perform never identity (Task.succeed (Simulate dt))
+      { model |
+        accFrameTime = model.accFrameTime - dt
+      } ! [
+        Task.perform never identity (Task.succeed (Simulate dt))
+      , Task.perform never identity (Task.succeed Tick)
       ]
 
 step : Float -> Model -> Model
@@ -190,7 +195,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch [
     Window.resizes SizeChange
-  , AnimationFrame.diffs Tick
+  , AnimationFrame.diffs NewFrame
   , Keyboard.downs (keyboardRouter True)
   , Keyboard.ups (keyboardRouter False)
   ]
