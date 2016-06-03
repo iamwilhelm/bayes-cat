@@ -49,9 +49,9 @@ controllable : Entity.Role.Name -> Model
 controllable role =
   ControllableType <| Component.Controllable.init role
 
-collidable : Entity.Role.Name -> Model
-collidable role =
-  CollidableType <| Component.Collidable.init role
+collidable : Entity.Role.Name -> Float -> Float -> Model
+collidable role restitution durability =
+  CollidableType <| Component.Collidable.init role restitution durability
 
 -- accessors
 

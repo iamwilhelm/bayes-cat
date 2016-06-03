@@ -20,11 +20,11 @@ init : Entity.ID -> Vec -> Vec -> Entity.Model
 init id pos vel = {
     id = id
   , components = [
-      Component.spatial 10 pos vel
+      Component.spatial 20 pos vel
     , Component.corporeal (35, 35) Color.gray
     , Component.gravitate Component.Gravitate.ToMoon
     , Component.renderable Entity.Role.Egg
-    , Component.collidable Entity.Role.Egg
+    , Component.collidable Entity.Role.Egg 1 10
     ]
   }
 

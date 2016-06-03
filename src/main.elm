@@ -18,10 +18,11 @@ import Html exposing (..)
 import Html.App as App
 
 import Entity
-import Entity.Camera
 import Entity.Role
-import Entity.Egg
+import Entity.Camera
+import Entity.Platform
 import Entity.Cat
+import Entity.Egg
 
 import System.Physics
 import System.Control
@@ -46,14 +47,15 @@ init : (Model, Cmd Msg)
 init =
   ({
       entities = [
-        Entity.Cat.init 0
-      , Entity.Camera.init 1
-      , Entity.Egg.init 11 (-300, 100) (10, 0)
-      , Entity.Egg.init 12 (-200, 100) (5, 10)
-      , Entity.Egg.init 13 (-100, 100) (-10, -10)
-      , Entity.Egg.init 14 (100, 100) (10, -5)
-      , Entity.Egg.init 15 (200, 100) (2, 5)
-      , Entity.Egg.init 16 (300, 100) (-4, 2)
+        Entity.Camera.init 1
+      , Entity.Platform.init 10 (-100, -150)
+      , Entity.Cat.init 20
+      , Entity.Egg.init 21 (-200, 100) (0, -1)
+      , Entity.Egg.init 22 (-200, -150) (0, 4)
+      --, Entity.Egg.init 23 (-100, 100) (-10, -10)
+      --, Entity.Egg.init 24 (100, 100) (10, -5)
+      --, Entity.Egg.init 25 (200, 100) (2, 5)
+      --, Entity.Egg.init 26 (300, 100) (-4, 2)
       ]
     , nextEntityId = 7
     , seed = Random.initialSeed 0
@@ -144,9 +146,11 @@ interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) 
 interact (role1, entity1) (role2, entity2) =
   case role1 of
     Entity.Role.Cat ->
-      Cmd.map Player <| Entity.Cat.interact (role1, entity1) (role2, entity2)
+      Cmd.map Player
+      <| Entity.Cat.interact (role1, entity1) (role2, entity2)
     Entity.Role.Egg ->
-      Cmd.map Egg <| Entity.Egg.interact (role1, entity1) (role2, entity2)
+      Cmd.map Egg
+      <| Entity.Egg.interact (role1, entity1) (role2, entity2)
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 
