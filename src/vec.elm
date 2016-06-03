@@ -54,6 +54,14 @@ neg : Vec -> Vec
 neg (x, y) =
   (-x, -y)
 
+normSqr : Vec -> Float
+normSqr (x, y) =
+  x * x + y * y
+
+norm : Vec -> Float
+norm v =
+  sqrt <| normSqr v
+
 clamp : Vec -> Vec -> Vec -> Vec
 clamp min max v =
   ( Basics.clamp (fst min) (fst max) (x v)
