@@ -29,6 +29,8 @@ batchInteractions interactor (self, other) (selfColl, otherColl) =
       ]
     (False, True, True) ->
       Just <| Cmd.batch [
+        interactor (selfColl.role, True, self) (otherColl.role, True, other)
+      , interactor (otherColl.role, True, other) (selfColl.role, True, self)
       ]
     _ ->
       Nothing
@@ -47,12 +49,22 @@ collide self other =
         m2 = otherSpace.mass
         v2 = otherSpace.vel
         x2 = otherSpace.pos
+
+        n = x2 |- x1
+        un = n ./ (norm n)
+        ut = (-(Vec.y un), Vec.x un)
+        v1n = Vec.dot un v1
+        v1t = Vec.dot ut v1
+        v2n = Vec.dot un v2
+        v1n' = un .* ((v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2))
+        v1t' = ut .* v1t
       in
         self
         |> Entity.filterMapSpatial (\space ->
             { space |
-              -- vel = (x1 |- x2) .* ((2 * m2 / m1 + m2) * ((dot (v1 |- v2) (x1 |- x2)) / normSqr (x1 |- x2)))
-              vel = (fst space.vel, -(snd space.vel))
+              --vel = ((x1 |- x2) .* (2 * m2 / m1 + m2)) .* ((dot (v1 |- v2) (x1 |- x2)) / normSqr (x1 |- x2))
+              --vel = (-(fst space.vel), -(snd space.vel))
+              vel = v1n' |+ v1t'
             } )
     )
   |> Maybe.withDefault self

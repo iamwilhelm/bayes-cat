@@ -56,7 +56,7 @@ neg (x, y) =
 
 normSqr : Vec -> Float
 normSqr (x, y) =
-  x * x + y * y
+  x^2 + y^2
 
 norm : Vec -> Float
 norm v =

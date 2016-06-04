@@ -52,10 +52,12 @@ init =
       , Entity.Cat.init 20
       , Entity.Egg.init 21 (-200, 100) (0, -1)
       , Entity.Egg.init 22 (-200, -150) (0, 4)
-      --, Entity.Egg.init 23 (-100, 100) (-10, -10)
-      --, Entity.Egg.init 24 (100, 100) (10, -5)
-      --, Entity.Egg.init 25 (200, 100) (2, 5)
-      --, Entity.Egg.init 26 (300, 100) (-4, 2)
+      , Entity.Egg.init 23 (-100, 100) (2, 0)
+      , Entity.Egg.init 24 (100, 100) (-2, 0)
+      , Entity.Egg.init 25 (200, 300) (2, 2)
+      , Entity.Egg.init 26 (300, 200) (-4, 2)
+      , Entity.Egg.init 27 (150, 200) (2, 2)
+      , Entity.Egg.init 28 (50, 200) (-4, 2)
       ]
     , nextEntityId = 7
     , seed = Random.initialSeed 0
