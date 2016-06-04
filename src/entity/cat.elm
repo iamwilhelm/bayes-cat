@@ -34,7 +34,7 @@ init id = {
 
 type Msg =
     Move MsgDirection
-  | Grow
+  | Bounce
   | NoOp
 
 type MsgDirection =
@@ -48,8 +48,8 @@ reduce msg model =
   case msg of
     Move direction ->
       reduceMove direction model
-    Grow ->
-      Entity.filterMapCorporeal (Component.Corporeal.color Color.red) model
+    Bounce ->
+      model
     _ ->
       model
 
@@ -68,11 +68,11 @@ reduceMove direction model =
 -- interaction
 
 -- what will other entities do to cat?
-interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
-interact (selfRole, self) (otherRole, other) =
+interact : (Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd Msg
+interact (selfRole, selfIsColliding, self) (otherRole, selfIsCollding, other) =
   case otherRole of
-    Entity.Role.Egg ->
-      Task.perform never identity (Task.succeed Grow)
+    Entity.Role.Platform ->
+      Task.perform never identity (Task.succeed Bounce)
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 

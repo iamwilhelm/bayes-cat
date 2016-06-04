@@ -140,3 +140,13 @@ filterMapCorporeal func components =
       _ ->
         component
   ) components
+
+filterMapCollidable : (Component.Collidable.Model -> Component.Collidable.Model) -> List Model -> List Model
+filterMapCollidable func components =
+  List.map (\component ->
+    case component of
+      CollidableType coll ->
+        CollidableType (func coll)
+      _ ->
+        component
+  ) components

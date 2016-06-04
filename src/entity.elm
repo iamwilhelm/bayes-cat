@@ -68,6 +68,18 @@ filterMapCorporeal : (Component.Corporeal.Model -> Component.Corporeal.Model) ->
 filterMapCorporeal func model =
   { model | components = Component.filterMapCorporeal func model.components }
 
+filterMapCollidable : (Component.Collidable.Model -> Component.Collidable.Model) -> Model -> Model
+filterMapCollidable func model =
+  { model | components = Component.filterMapCollidable func model.components }
+
+-- status
+
+isColliding : Model -> Bool
+isColliding model =
+  getCollidable model
+  |> Maybe.map (\coll -> coll.isColliding)
+  |> Maybe.withDefault False
+
 -- system calls
 
 boundFloor : Window.Size -> Model -> Model

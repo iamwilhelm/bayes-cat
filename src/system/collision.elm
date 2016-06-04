@@ -1,6 +1,7 @@
-module System.Collision exposing (detect, touching, overlap)
+module System.Collision exposing (detect, touching, overlap, collide, dist)
 
 import Maybe exposing (andThen)
+import Task
 
 import Vec exposing (..)
 
@@ -13,26 +14,56 @@ import Component.Collidable
 
 type alias Range = (Float, Float)
 
-detect : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
+detect : ((Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
 detect interactor (self, other) =
-  if touching self other then
-    Entity.getCollidablePair (self, other) `andThen`
-      batchInteractions interactor (self, other)
-  else
-    Nothing
+  Entity.getCollidablePair (self, other)
+    `andThen` batchInteractions interactor (self, other)
 
-batchInteractions : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> (Component.Collidable.Model, Component.Collidable.Model) -> Maybe (Cmd msg)
+batchInteractions : ((Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> (Component.Collidable.Model, Component.Collidable.Model) -> Maybe (Cmd msg)
 batchInteractions interactor (self, other) (selfColl, otherColl) =
-  Just <| Cmd.batch [
-    interactor (selfColl.role, self) (otherColl.role, other)
-  , interactor (otherColl.role, other) (selfColl.role, self)
-  ]
+  case (touching self other, selfColl.isColliding, otherColl.isColliding) of
+    (True, False, False) ->
+      Just <| Cmd.batch [
+        interactor (selfColl.role, False, self) (otherColl.role, False, other)
+      , interactor (otherColl.role, False, other) (selfColl.role, False, self)
+      ]
+    (False, True, True) ->
+      Just <| Cmd.batch [
+      ]
+    _ ->
+      Nothing
 
---collide : Entity.Model -> Entity.Model -> Entity.Model
---collide self other =
---  Entity.filterMapSpatial (\space ->
---    Component.Spatial.vel (Vec.neg space.vel) space
---  ) self
+collide : Entity.Model -> Entity.Model -> Entity.Model
+collide self other =
+  Maybe.map2 (,)
+    (Maybe.map2 (,) (Entity.getSpatial self) (Entity.getCollidable self))
+    (Maybe.map2 (,) (Entity.getSpatial other) (Entity.getCollidable other))
+  |> Maybe.map (\((selfSpace, selfColl), (otherSpace, otherColl)) ->
+      let
+        cor = selfColl.restitution
+        m1 = selfSpace.mass
+        v1 = selfSpace.vel
+        x1 = selfSpace.pos
+        m2 = otherSpace.mass
+        v2 = otherSpace.vel
+        x2 = otherSpace.pos
+      in
+        self
+        |> Entity.filterMapSpatial (\space ->
+            { space |
+              -- vel = (x1 |- x2) .* ((2 * m2 / m1 + m2) * ((dot (v1 |- v2) (x1 |- x2)) / normSqr (x1 |- x2)))
+              vel = (fst space.vel, -(snd space.vel))
+            } )
+    )
+  |> Maybe.withDefault self
+
+dist : Entity.Model -> Entity.Model -> Float
+dist self other =
+  Maybe.map2 (,) (Entity.getSpatial self) (Entity.getSpatial other)
+  |> Maybe.map (\(s1, s2) -> Vec.norm (s1.pos |- s2.pos) )
+  |> Maybe.withDefault -1.0
+
+--calcCollision : (Component.Spatial.Model, Component.Collidable.Model) -> (C)
 
 -- helper functions
 -- TODO should these be in a library called geometry? (but they can't refer to entity)
@@ -48,6 +79,7 @@ overlap (minA, maxA) (minB, maxB) =
 
 touching : Entity.Model -> Entity.Model -> Bool
 touching self other =
+  -- TODO replace with Maybe.map4
   let
     mSelfSpace = Entity.getSpatial self
     mSelfCorp = Entity.getCorporeal self

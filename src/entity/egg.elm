@@ -12,6 +12,9 @@ import Component.Corporeal
 import Component.Gravitate
 import Vec exposing (..)
 
+-- FIXME should entities be able to reference systems?
+import System.Collision
+
 import Debug
 
 -- model
@@ -35,11 +38,17 @@ type alias Id = Int
 type Msg =
     Open Id
   | Close Id
+  | Bounce Id Entity.Model
+  | Collide Id CollideMsg
   | NoOp
 
+type CollideMsg =
+    Enter
+  | Exit
+
 reduce : Msg -> Entity.Model -> Entity.Model
-reduce action model =
-  case action of
+reduce msg model =
+  case msg of
     Open id ->
       if model.id == id then
         Entity.filterMapCorporeal (Component.Corporeal.color Color.blue) model
@@ -50,19 +59,50 @@ reduce action model =
         Entity.filterMapCorporeal (Component.Corporeal.color Color.gray) model
       else
         model
+    Bounce id other ->
+      if model.id == id then
+        System.Collision.collide model other
+      else
+        model
+    Collide id msg ->
+      if model.id == id then
+        reduceCollide msg model
+      else
+        model
     _ ->
       model
+
+reduceCollide : CollideMsg -> Entity.Model -> Entity.Model
+reduceCollide msg model =
+  case msg of
+    Enter ->
+      Entity.filterMapCollidable (\coll -> { coll | isColliding = True }) model
+    Exit ->
+      Entity.filterMapCollidable (\coll -> { coll | isColliding = False }) model
 
 -- interaction
 
 -- what will other entities do to egg?
-interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
-interact (selfRole, self) (otherRole, other) =
-  case otherRole of
-    Entity.Role.Cat ->
+interact : (Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd Msg
+interact (selfRole, selfIsColliding, self) (otherRole, otherIsColliding, other) =
+  case (otherRole, selfIsColliding, otherIsColliding) of
+    (Entity.Role.Cat, False, False) ->
       Task.perform never identity (Task.succeed (Open self.id))
-    Entity.Role.Egg ->
-      Task.perform never identity (Task.succeed (Close self.id))
+    (Entity.Role.Egg, False, False) ->
+      let
+        _ = 3 --Debug.log "egg on egg" (self.id, other.id)
+        --a = Debug.log "dist" <| System.Collision.dist self other
+        --b = Debug.log "vel" <| (self.id, Maybe.withDefault (-1.0, -1.0) <| Maybe.map (\s -> s.vel) <| Entity.getSpatial self)
+      in
+        Cmd.batch [
+          Task.perform never identity (Task.succeed (Close self.id))
+        , Task.perform never identity (Task.succeed (Bounce self.id other))
+        , Task.perform never identity (Task.succeed (Collide self.id Enter))
+        ]
+    (Entity.Role.Egg, True, True) ->
+      Task.perform never identity (Task.succeed (Collide self.id Exit))
+    (Entity.Role.Platform, False, False) ->
+      Task.perform never identity (Task.succeed NoOp)
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 

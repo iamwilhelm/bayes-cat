@@ -147,15 +147,15 @@ effects dt model =
 
 -- interactions
 
-interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
-interact (role1, entity1) (role2, entity2) =
+interact : (Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd Msg
+interact (role1, isColliding1, entity1) (role2, isColliding2, entity2) =
   case role1 of
     Entity.Role.Cat ->
       Cmd.map Player
-      <| Entity.Cat.interact (role1, entity1) (role2, entity2)
+      <| Entity.Cat.interact (role1, isColliding1, entity1) (role2, isColliding2, entity2)
     Entity.Role.Egg ->
       Cmd.map Egg
-      <| Entity.Egg.interact (role1, entity1) (role2, entity2)
+      <| Entity.Egg.interact (role1, isColliding1, entity1) (role2, isColliding2, entity2)
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 
