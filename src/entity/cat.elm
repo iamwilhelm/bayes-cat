@@ -68,8 +68,8 @@ reduceMove direction model =
 -- interaction
 
 -- what will other entities do to cat?
-interact : (Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd Msg
-interact (selfRole, selfIsColliding, self) (otherRole, selfIsCollding, other) =
+interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
+interact (selfRole, self) (otherRole, other) =
   case otherRole of
     Entity.Role.Platform ->
       Task.perform never identity (Task.succeed Bounce)

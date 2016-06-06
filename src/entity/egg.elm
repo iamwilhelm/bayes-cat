@@ -25,7 +25,7 @@ init id pos vel = {
   , components = [
       Component.spatial 20 pos vel
     , Component.corporeal (35, 35) Color.gray
-    , Component.gravitate Component.Gravitate.ToMoon
+    , Component.gravitate Component.Gravitate.ToEarth
     , Component.renderable Entity.Role.Egg
     , Component.collidable Entity.Role.Egg 1 10
     ]
@@ -87,13 +87,13 @@ reduceCollide msg model =
 -- interaction
 
 -- what will other entities do to egg?
-interact : (Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd Msg
-interact (selfRole, selfIsColliding, self) (otherRole, otherIsColliding, other) =
-  case (otherRole, selfIsColliding) of
-    (Entity.Role.Cat, False) ->
+interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
+interact (selfRole, self) (otherRole, other) =
+  case otherRole of
+    Entity.Role.Cat ->
       --Task.perform never identity (Task.succeed (Open self.id))
       Task.perform never identity (Task.succeed NoOp)
-    (Entity.Role.Egg, False) ->
+    Entity.Role.Egg ->
       let
         _ = 3 --Debug.log "egg on egg" (self.id, other.id)
         --a = Debug.log "dist" <| System.Collision.dist self other
@@ -103,10 +103,6 @@ interact (selfRole, selfIsColliding, self) (otherRole, otherIsColliding, other) 
           Task.perform never identity (Task.succeed (Collide self.id Enter))
         , Task.perform never identity (Task.succeed (Bounce self.id other))
         ]
-    (Entity.Role.Egg, True) ->
-      Task.perform never identity (Task.succeed (Collide self.id Exit))
-    (Entity.Role.Platform, False) ->
-      Task.perform never identity (Task.succeed NoOp)
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 

@@ -14,23 +14,20 @@ import Component.Collidable
 
 type alias Range = (Float, Float)
 
-detect : ((Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
+type alias Manifold = ((Component.Spatial.Model, Component.Collidable.Model), (Component.Spatial.Model, Component.Collidable.Model))
+
+detect : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
 detect interactor (self, other) =
   Entity.getCollidablePair (self, other)
     `andThen` batchInteractions interactor (self, other)
 
-batchInteractions : ((Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> (Component.Collidable.Model, Component.Collidable.Model) -> Maybe (Cmd msg)
+batchInteractions : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> (Component.Collidable.Model, Component.Collidable.Model) -> Maybe (Cmd msg)
 batchInteractions interactor (self, other) (selfColl, otherColl) =
-  case (touching self other, selfColl.isColliding, otherColl.isColliding) of
-    (True, False, False) ->
+  case touching self other of
+    True ->
       Just <| Cmd.batch [
-        interactor (selfColl.role, False, self) (otherColl.role, False, other)
-      , interactor (otherColl.role, False, other) (selfColl.role, False, self)
-      ]
-    (False, True, True) ->
-      Just <| Cmd.batch [
-        interactor (selfColl.role, True, self) (otherColl.role, True, other)
-      , interactor (otherColl.role, True, other) (selfColl.role, True, self)
+        interactor (selfColl.role, self) (otherColl.role, other)
+      , interactor (otherColl.role, other) (selfColl.role, self)
       ]
     _ ->
       Nothing
@@ -40,34 +37,56 @@ collide self other =
   Maybe.map2 (,)
     (Maybe.map2 (,) (Entity.getSpatial self) (Entity.getCollidable self))
     (Maybe.map2 (,) (Entity.getSpatial other) (Entity.getCollidable other))
-  |> Maybe.map (\((selfSpace, selfColl), (otherSpace, otherColl)) ->
-      let
-        cor = selfColl.restitution
-        m1 = selfSpace.mass
-        v1 = selfSpace.vel
-        x1 = selfSpace.pos
-        m2 = otherSpace.mass
-        v2 = otherSpace.vel
-        x2 = otherSpace.pos
-
-        n = x2 |- x1
-        un = n ./ (norm n)
-        ut = (-(Vec.y un), Vec.x un)
-        v1n = Vec.dot un v1
-        v1t = Vec.dot ut v1
-        v2n = Vec.dot un v2
-        v1n' = un .* ((v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2))
-        v1t' = ut .* v1t
-      in
-        self
-        |> Entity.filterMapSpatial (\space ->
-            { space |
-              --vel = ((x1 |- x2) .* (2 * m2 / m1 + m2)) .* ((dot (v1 |- v2) (x1 |- x2)) / normSqr (x1 |- x2))
-              --vel = (-(fst space.vel), -(snd space.vel))
-              vel = v1n' |+ v1t'
-            } )
-    )
+  |> Maybe.map (collisionAlgo self)
   |> Maybe.withDefault self
+
+collisionAlgo : Entity.Model -> ((Component.Spatial.Model, Component.Collidable.Model), (Component.Spatial.Model, Component.Collidable.Model)) -> Entity.Model
+collisionAlgo self ((selfSpace, selfColl), (otherSpace, otherColl)) =
+  let
+    normal = otherSpace.pos |- selfSpace.pos
+    rv = otherSpace.vel |- selfSpace.vel
+    normalVel = dot rv normal
+  in
+    if normalVel <= 0 then
+      let
+        restitution = min selfColl.restitution otherColl.restitution
+        impulseScalar = -(1 + restitution) * normalVel / (1 / selfSpace.mass + 1 / otherSpace.mass)
+        impulse = normal .* impulseScalar
+      in
+        Entity.filterMapSpatial (\space ->
+          { space | vel = space.vel |+ (impulse ./ selfSpace.mass) }
+        ) self
+    else
+      self
+
+--collisionAlgo1 : Entity.Model -> Manifold -> Entity.Model
+--collisionAlgo1 self ((selfSpace, selfColl), (otherSpace, otherColl)) =
+--  let
+--    cor = selfColl.restitution
+--    m1 = selfSpace.mass
+--    v1 = selfSpace.vel
+--    x1 = selfSpace.pos
+--    m2 = otherSpace.mass
+--    v2 = otherSpace.vel
+--    x2 = otherSpace.pos
+--
+--    n = x2 |- x1
+--    un = n ./ (norm n)
+--    ut = (-(Vec.y un), Vec.x un)
+--    v1n = Vec.dot un v1
+--    v1t = Vec.dot ut v1
+--    v2n = Vec.dot un v2
+--    v1n' = un .* ((v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2))
+--    v1t' = ut .* v1t
+--  in
+--    self
+--    |> Entity.filterMapSpatial (\space ->
+--        { space |
+--          --vel = ((x1 |- x2) .* (2 * m2 / m1 + m2)) .* ((dot (v1 |- v2) (x1 |- x2)) / normSqr (x1 |- x2))
+--          --vel = (-(fst space.vel), -(snd space.vel))
+--          vel = v1n' |+ v1t'
+--        } )
+
 
 dist : Entity.Model -> Entity.Model -> Float
 dist self other =

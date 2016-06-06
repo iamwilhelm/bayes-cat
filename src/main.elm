@@ -49,7 +49,7 @@ init =
       entities = [
         Entity.Camera.init 1
       , Entity.Platform.init 10 (-100, -150)
-      , Entity.Cat.init 20
+      --, Entity.Cat.init 20
       , Entity.Egg.init 21 (-200, 100) (0, -1)
       , Entity.Egg.init 22 (-200, -150) (0, 4)
       , Entity.Egg.init 23 (-100, 100) (2, 0)
@@ -100,7 +100,10 @@ update msg model =
     Tick ->
       stablizeFrameRate model
     Simulate dt ->
-      (step dt model, Cmd.batch <| effects dt model)
+      let
+        _ = Debug.log "simulate" dt
+      in
+        (step dt model, Cmd.batch <| effects dt model)
     SizeChange size ->
       { model | size = size } ! []
     Player catMsg ->
@@ -149,15 +152,15 @@ effects dt model =
 
 -- interactions
 
-interact : (Entity.Role.Name, Bool, Entity.Model) -> (Entity.Role.Name, Bool, Entity.Model) -> Cmd Msg
-interact (role1, isColliding1, entity1) (role2, isColliding2, entity2) =
+interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
+interact (role1, entity1) (role2, entity2) =
   case role1 of
     Entity.Role.Cat ->
       Cmd.map Player
-      <| Entity.Cat.interact (role1, isColliding1, entity1) (role2, isColliding2, entity2)
+      <| Entity.Cat.interact (role1, entity1) (role2, entity2)
     Entity.Role.Egg ->
       Cmd.map Egg
-      <| Entity.Egg.interact (role1, isColliding1, entity1) (role2, isColliding2, entity2)
+      <| Entity.Egg.interact (role1, entity1) (role2, entity2)
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 
