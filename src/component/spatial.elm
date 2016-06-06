@@ -3,6 +3,7 @@ module Component.Spatial exposing (..)
 import Transform exposing (Transform, multiply)
 import Vec exposing (..)
 
+-- TODO store mass_inv instead of mass
 type alias Model = {
     mass : Float
   , forces : List Vec

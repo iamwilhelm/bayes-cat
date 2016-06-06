@@ -26,6 +26,10 @@ Uses the Velocity Verlet integration to calculate the physics
 
 TODO need to cap limits of velocity before translating to position
 
+http://gamedevelopment.tutsplus.com/tutorials/create-custom-2d-physics-engine-aabb-circle-impulse-resolution--gamedev-6331
+http://gafferongames.com/game-physics/integration-basics/
+http://gafferongames.com/game-physics/fix-your-timestep/
+
 -}
 newtonian : Float -> Entity.Model -> Entity.Model
 newtonian dt entity =
