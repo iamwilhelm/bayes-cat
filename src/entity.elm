@@ -72,14 +72,6 @@ filterMapCollidable : (Component.Collidable.Model -> Component.Collidable.Model)
 filterMapCollidable func model =
   { model | components = Component.filterMapCollidable func model.components }
 
--- status
-
-isColliding : Model -> Bool
-isColliding model =
-  getCollidable model
-  |> Maybe.map (\coll -> coll.isColliding)
-  |> Maybe.withDefault False
-
 -- system calls
 
 boundFloor : Window.Size -> Model -> Model

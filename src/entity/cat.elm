@@ -26,7 +26,7 @@ init id = {
     , Component.gravitate Component.Gravitate.ToEarth
     , Component.controllable Entity.Role.Cat
     , Component.renderable Entity.Role.Cat
-    , Component.collidable Entity.Role.Cat 1 10
+    , Component.collidable Entity.Role.Cat 1
     ]
   }
 

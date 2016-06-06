@@ -27,7 +27,7 @@ init id pos vel = {
     , Component.corporeal (35, 35) Color.gray
     , Component.gravitate Component.Gravitate.ToEarth
     , Component.renderable Entity.Role.Egg
-    , Component.collidable Entity.Role.Egg 1 10
+    , Component.collidable Entity.Role.Egg 1
     ]
   }
 
@@ -38,7 +38,6 @@ type alias Id = Int
 type Msg =
     Open Id
   | Close Id
-  | Bounce Id Entity.Model
   | Collide Id CollideMsg
   | NoOp
 
@@ -59,30 +58,13 @@ reduce msg model =
         Entity.filterMapCorporeal (Component.Corporeal.color Color.gray) model
       else
         model
-    Bounce id other ->
-      if model.id == id then
-        System.Collision.collide model other
-      else
-        model
     Collide id msg ->
       if model.id == id then
-        reduceCollide msg model
+        model
       else
         model
     _ ->
       model
-
-reduceCollide : CollideMsg -> Entity.Model -> Entity.Model
-reduceCollide msg model =
-  case msg of
-    Enter ->
-      Entity.filterMapCollidable (\coll -> { coll | isColliding = True })
-        <| Entity.filterMapCorporeal (Component.Corporeal.color Color.red)
-        <| model
-    Exit ->
-      Entity.filterMapCollidable (\coll -> { coll | isColliding = False })
-        <| Entity.filterMapCorporeal (Component.Corporeal.color Color.green)
-        <| model
 
 -- interaction
 
@@ -94,15 +76,9 @@ interact (selfRole, self) (otherRole, other) =
       --Task.perform never identity (Task.succeed (Open self.id))
       Task.perform never identity (Task.succeed NoOp)
     Entity.Role.Egg ->
-      let
-        _ = 3 --Debug.log "egg on egg" (self.id, other.id)
-        --a = Debug.log "dist" <| System.Collision.dist self other
-        --b = Debug.log "vel" <| (self.id, Maybe.withDefault (-1.0, -1.0) <| Maybe.map (\s -> s.vel) <| Entity.getSpatial self)
-      in
-        Cmd.batch [
-          Task.perform never identity (Task.succeed (Collide self.id Enter))
-        , Task.perform never identity (Task.succeed (Bounce self.id other))
-        ]
+      Cmd.batch [
+        Task.perform never identity (Task.succeed (Collide self.id Enter))
+      ]
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 

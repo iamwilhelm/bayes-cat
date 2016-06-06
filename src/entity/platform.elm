@@ -20,7 +20,7 @@ init id pos = {
       Component.spatial 1000 pos (0, 0)
     , Component.corporeal (400, 20) Color.brown
     , Component.renderable Entity.Role.Platform
-    , Component.collidable Entity.Role.Platform 1 10
+    , Component.collidable Entity.Role.Platform 1
     ]
   }
 

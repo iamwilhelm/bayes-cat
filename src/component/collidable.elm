@@ -5,14 +5,12 @@ import Entity.Role
 type alias Model = {
     role: Entity.Role.Name
   , restitution: Float -- coef for elasticity of collision. set to 1 for elastic collision
-  , isColliding: Bool
   }
 
-init : Entity.Role.Name -> Float -> Float -> Model
-init role restitution durability = {
+init : Entity.Role.Name -> Float -> Model
+init role restitution = {
     role = role
   , restitution = restitution
-  , isColliding = False
   }
 
 isRole : Entity.Role.Name -> Model -> Maybe Model
