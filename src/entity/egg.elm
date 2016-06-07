@@ -1,6 +1,7 @@
 module Entity.Egg exposing (..)
 
 import Basics.Extra exposing (never)
+import Cmd.Extra exposing (msgToCmd)
 import Collage exposing (..)
 import Task
 import Color
@@ -70,18 +71,21 @@ interact selfM otherM =
   case otherM.coll.role of
     Entity.Role.Cat ->
       --Task.perform never identity (Task.succeed (Open self.id))
-      Task.perform never identity (Task.succeed NoOp)
+      msgToCmd NoOp
     Entity.Role.Egg ->
-      Task.perform never identity (Task.succeed NoOp)
-      --System.Collision.impulseMsg (\selfImpulse otherImpulse ->
-      --  Cmd.batch [
-      --    Task.perform never identity (Task.succeed <| Impulse selfM.entity.id selfImpulse)
-      --  , Task.perform never identity (Task.succeed <| Impulse otherM.entity.id otherImpulse)
-      --  ]
-      --) selfM otherM
+      --Task.perform never identity (Task.succeed NoOp)
+      System.Collision.impulseMsg (\selfImpulse otherImpulse ->
+        let
+          a = Debug.log "imp" (selfM.entity.id, selfImpulse)
+          b = Debug.log "imp" (otherM.entity.id, otherImpulse)
+        in
+          Cmd.batch [
+            msgToCmd (Impulse selfM.entity.id selfImpulse)
+          , msgToCmd (Impulse otherM.entity.id otherImpulse)
+          ]
+      ) selfM otherM
     _ ->
-      Task.perform never identity (Task.succeed NoOp)
-
+      msgToCmd NoOp
 
 -- view
 

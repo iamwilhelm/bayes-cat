@@ -1,6 +1,7 @@
 module Entity.Cat exposing (..)
 
 import Basics.Extra exposing (never)
+import Cmd.Extra exposing (msgToCmd)
 import Collage exposing (..)
 import Task
 import Color
@@ -74,9 +75,9 @@ interact : System.Collision.Manifold -> System.Collision.Manifold -> Cmd Msg
 interact selfM otherM =
   case otherM.coll.role of
     Entity.Role.Platform ->
-      Task.perform never identity (Task.succeed Bounce)
+      msgToCmd Bounce
     _ ->
-      Task.perform never identity (Task.succeed NoOp)
+      msgToCmd NoOp
 
 -- view
 

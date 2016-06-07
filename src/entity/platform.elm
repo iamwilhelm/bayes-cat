@@ -1,6 +1,7 @@
 module Entity.Platform exposing (..)
 
 import Basics.Extra exposing (never)
+import Cmd.Extra exposing (msgToCmd)
 import Collage exposing (..)
 import Task
 import Color
@@ -41,7 +42,7 @@ interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) 
 interact (selfRole, self) (otherRole, other) =
   case otherRole of
     _ ->
-      Task.perform never identity (Task.succeed NoOp)
+      msgToCmd NoOp
 
 -- view
 
