@@ -13,6 +13,8 @@ import Component.Corporeal
 import Component.Gravitate
 import Vec exposing (..)
 
+import System.Collision
+
 import Debug
 
 -- model
@@ -68,9 +70,9 @@ reduceMove direction model =
 -- interaction
 
 -- what will other entities do to cat?
-interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
-interact (selfRole, self) (otherRole, other) =
-  case otherRole of
+interact : System.Collision.Manifold -> System.Collision.Manifold -> Cmd Msg
+interact selfM otherM =
+  case otherM.coll.role of
     Entity.Role.Platform ->
       Task.perform never identity (Task.succeed Bounce)
     _ ->

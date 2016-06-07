@@ -38,12 +38,8 @@ type alias Id = Int
 type Msg =
     Open Id
   | Close Id
-  | Collide Id CollideMsg
+  | Impulse Id Vec
   | NoOp
-
-type CollideMsg =
-    Enter
-  | Exit
 
 reduce : Msg -> Entity.Model -> Entity.Model
 reduce msg model =
@@ -58,9 +54,9 @@ reduce msg model =
         Entity.filterMapCorporeal (Component.Corporeal.color Color.gray) model
       else
         model
-    Collide id msg ->
+    Impulse id impulse ->
       if model.id == id then
-        model
+        Entity.applyImpulse impulse model
       else
         model
     _ ->
@@ -69,16 +65,20 @@ reduce msg model =
 -- interaction
 
 -- what will other entities do to egg?
-interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
-interact (selfRole, self) (otherRole, other) =
-  case otherRole of
+interact : System.Collision.Manifold -> System.Collision.Manifold -> Cmd Msg
+interact selfM otherM =
+  case otherM.coll.role of
     Entity.Role.Cat ->
       --Task.perform never identity (Task.succeed (Open self.id))
       Task.perform never identity (Task.succeed NoOp)
     Entity.Role.Egg ->
-      Cmd.batch [
-        Task.perform never identity (Task.succeed (Collide self.id Enter))
-      ]
+      Task.perform never identity (Task.succeed NoOp)
+      --System.Collision.impulseMsg (\selfImpulse otherImpulse ->
+      --  Cmd.batch [
+      --    Task.perform never identity (Task.succeed <| Impulse selfM.entity.id selfImpulse)
+      --  , Task.perform never identity (Task.succeed <| Impulse otherM.entity.id otherImpulse)
+      --  ]
+      --) selfM otherM
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 

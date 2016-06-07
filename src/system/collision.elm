@@ -1,4 +1,5 @@
-module System.Collision exposing (detect, touching, overlap, collide, dist)
+module System.Collision exposing (
+  detect, touching, overlap, dist, impulseMsg, Manifold)
 
 import Maybe exposing (andThen)
 import Task
@@ -10,54 +11,59 @@ import Entity.Role
 
 import Component
 import Component.Spatial
+import Component.Corporeal
 import Component.Collidable
 
 type alias Range = (Float, Float)
 
-type alias Manifold = ((Component.Spatial.Model, Component.Collidable.Model), (Component.Spatial.Model, Component.Collidable.Model))
+type alias Manifold = {
+    entity : Entity.Model
+  , space : Component.Spatial.Model
+  , corp : Component.Corporeal.Model
+  , coll : Component.Collidable.Model
+  }
 
-detect : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
+type alias Interaction = (Manifold, Manifold)
+
+detect : (Manifold -> Manifold -> Cmd msg) -> (Entity.Model, Entity.Model) -> Maybe (Cmd msg)
 detect interactor (self, other) =
-  Entity.getCollidablePair (self, other)
-    `andThen` batchInteractions interactor (self, other)
+  createManifoldPair self other
+    `andThen` collisionInteractionMsg interactor
 
-batchInteractions : ((Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd msg) -> (Entity.Model, Entity.Model) -> (Component.Collidable.Model, Component.Collidable.Model) -> Maybe (Cmd msg)
-batchInteractions interactor (self, other) (selfColl, otherColl) =
-  case touching self other of
-    True ->
-      Just <| Cmd.batch [
-        interactor (selfColl.role, self) (otherColl.role, other)
-      , interactor (otherColl.role, other) (selfColl.role, self)
-      ]
-    _ ->
-      Nothing
+createManifoldPair : Entity.Model -> Entity.Model -> Maybe (Manifold, Manifold)
+createManifoldPair self other =
+  Maybe.map2 (,) (initManifold self) (initManifold other)
 
-collide : Entity.Model -> Entity.Model -> Entity.Model
-collide self other =
-  Maybe.map2 (,)
-    (Maybe.map2 (,) (Entity.getSpatial self) (Entity.getCollidable self))
-    (Maybe.map2 (,) (Entity.getSpatial other) (Entity.getCollidable other))
-  |> Maybe.map (collisionAlgo self)
-  |> Maybe.withDefault self
+initManifold : Entity.Model -> Maybe Manifold
+initManifold entity =
+  Maybe.map3 (,,) (Entity.getSpatial entity) (Entity.getCorporeal entity) (Entity.getCollidable entity)
+  |> Maybe.map (\(space, corp, coll) ->
+      { entity = entity , space = space , corp = corp, coll = coll }
+    )
 
-collisionAlgo : Entity.Model -> ((Component.Spatial.Model, Component.Collidable.Model), (Component.Spatial.Model, Component.Collidable.Model)) -> Entity.Model
-collisionAlgo self ((selfSpace, selfColl), (otherSpace, otherColl)) =
+collisionInteractionMsg : (Manifold -> Manifold -> Cmd msg) -> (Manifold, Manifold) -> Maybe (Cmd msg)
+collisionInteractionMsg interactor (selfM, otherM) =
+  if not (touching selfM otherM) then
+    Nothing
+  else
+    Just <| interactor selfM otherM
+
+impulseMsg : (Vec -> Vec -> Cmd msg) -> Manifold -> Manifold -> Cmd msg
+impulseMsg impulseMsg self other =
   let
-    normal = otherSpace.pos |- selfSpace.pos
-    rv = otherSpace.vel |- selfSpace.vel
+    normal = other.space.pos |- self.space.pos
+    rv = other.space.vel |- self.space.vel
     normalVel = dot rv normal
   in
     if normalVel <= 0 then
       let
-        restitution = min selfColl.restitution otherColl.restitution
-        impulseScalar = -(1 + restitution) * normalVel / (1 / selfSpace.mass + 1 / otherSpace.mass)
+        restitution = min self.coll.restitution other.coll.restitution
+        impulseScalar = -(1 + restitution) * normalVel / (1 / self.space.mass + 1 / other.space.mass)
         impulse = normal .* impulseScalar
       in
-        Entity.filterMapSpatial (\space ->
-          { space | vel = space.vel |+ (impulse ./ selfSpace.mass) }
-        ) self
+        impulseMsg (Vec.neg impulse) impulse
     else
-      self
+      Cmd.none
 
 --collisionAlgo1 : Entity.Model -> Manifold -> Entity.Model
 --collisionAlgo1 self ((selfSpace, selfColl), (otherSpace, otherColl)) =
@@ -108,27 +114,16 @@ overlap (minA, maxA) (minB, maxB) =
   else
     True
 
-touching : Entity.Model -> Entity.Model -> Bool
+touching : Manifold -> Manifold-> Bool
 touching self other =
-  -- TODO replace with Maybe.map4
   let
-    mSelfSpace = Entity.getSpatial self
-    mSelfCorp = Entity.getCorporeal self
-    mOtherSpace = Entity.getSpatial other
-    mOtherCorp = Entity.getCorporeal other
+    selfMin = self.space.pos |- self.corp.dim ./ 2
+    selfMax = self.space.pos |+ self.corp.dim ./ 2
+    otherMin = other.space.pos |- other.corp.dim ./ 2
+    otherMax = other.space.pos |+ other.corp.dim ./ 2
   in
-    case (mSelfSpace, mSelfCorp, mOtherSpace, mOtherCorp) of
-      (Just selfSpace, Just selfCorp, Just otherSpace, Just otherCorp) ->
-        let
-          selfMin = selfSpace.pos |- selfCorp.dim ./ 2
-          selfMax = selfSpace.pos |+ selfCorp.dim ./ 2
-          otherMin = otherSpace.pos |- otherCorp.dim ./ 2
-          otherMax = otherSpace.pos |+ otherCorp.dim ./ 2
-        in
-          overlap (Vec.x selfMin, Vec.x selfMax) (Vec.x otherMin, Vec.x otherMax)
-          && overlap (Vec.y selfMin, Vec.y selfMax) (Vec.y otherMin, Vec.y otherMax)
-      _ ->
-        False
+    overlap (Vec.x selfMin, Vec.x selfMax) (Vec.x otherMin, Vec.x otherMax)
+    && overlap (Vec.y selfMin, Vec.y selfMax) (Vec.y otherMin, Vec.y otherMax)
 
 --within : Range -> Range -> Bool
 --within (minA, maxA) (minB, maxB) =

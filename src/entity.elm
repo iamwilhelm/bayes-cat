@@ -72,6 +72,14 @@ filterMapCollidable : (Component.Collidable.Model -> Component.Collidable.Model)
 filterMapCollidable func model =
   { model | components = Component.filterMapCollidable func model.components }
 
+-- accessors
+
+applyImpulse : Vec -> Model -> Model
+applyImpulse impulse model =
+  filterMapSpatial (\space ->
+    { space | vel = space.vel |+ (impulse ./ space.mass) }
+  ) model
+
 -- system calls
 
 boundFloor : Window.Size -> Model -> Model

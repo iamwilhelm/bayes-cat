@@ -101,14 +101,18 @@ update msg model =
       stablizeFrameRate model
     Simulate dt ->
       let
-        _ = Debug.log "simulate" dt
+        _ = 3 -- Debug.log "simulate" dt
       in
         (step dt model, Cmd.batch <| effects dt model)
     SizeChange size ->
       { model | size = size } ! []
     Player catMsg ->
+      -- TODO compose control and reduce
       map (System.Control.control Entity.Role.Cat (Entity.Cat.reduce catMsg)) model ! []
     Egg eggMsg ->
+      -- TODO should we filter the ID of message first?
+      -- so instead of a map, there's a "I'm going to act upson this thing I find"
+      -- TODO maybe message is Egg Id (EggMsg)
       map (Entity.Egg.reduce eggMsg) model ! []
     Camera cameraMsg ->
       map (System.Control.control Entity.Role.Camera (Entity.Camera.reduce cameraMsg)) model ! []
@@ -148,19 +152,23 @@ step dt model =
 -- TODO should filterMap after pairMap?
 effects : Float -> Model -> List (Cmd Msg)
 effects dt model =
-  List.filterMap (System.Collision.detect interact) (pairs model.entities)
+  let
+    effects = List.filterMap (System.Collision.detect interact) (pairs model.entities)
+    _ = Debug.log "effects: " <| List.length effects
+  in
+    effects
 
 -- interactions
 
-interact : (Entity.Role.Name, Entity.Model) -> (Entity.Role.Name, Entity.Model) -> Cmd Msg
-interact (role1, entity1) (role2, entity2) =
-  case role1 of
+interact : System.Collision.Manifold -> System.Collision.Manifold -> Cmd Msg
+interact selfManifold otherManifold =
+  case selfManifold.coll.role of
     Entity.Role.Cat ->
       Cmd.map Player
-      <| Entity.Cat.interact (role1, entity1) (role2, entity2)
+      <| Entity.Cat.interact selfManifold otherManifold
     Entity.Role.Egg ->
       Cmd.map Egg
-      <| Entity.Egg.interact (role1, entity1) (role2, entity2)
+      <| Entity.Egg.interact selfManifold otherManifold
     _ ->
       Task.perform never identity (Task.succeed NoOp)
 
