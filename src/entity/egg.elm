@@ -32,6 +32,18 @@ init id pos vel = {
     ]
   }
 
+
+initC : Entity.ID -> Vec -> Vec -> Entity.Model
+initC id pos vel = {
+    id = id
+  , components = [
+      Component.spatial 20 pos vel
+    , Component.corporeal (35, 35) Color.red
+    , Component.gravitate Component.Gravitate.ToEarth
+    , Component.renderable Entity.Role.Egg
+    , Component.collidable Entity.Role.Egg 1
+    ]
+  }
 -- update
 
 type alias Id = Int

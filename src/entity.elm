@@ -77,7 +77,10 @@ filterMapCollidable func model =
 applyImpulse : Vec -> Model -> Model
 applyImpulse impulse model =
   filterMapSpatial (\space ->
-    { space | vel = space.vel |+ (impulse ./ space.mass) }
+    let
+      _ = Debug.log "impulse" impulse
+    in
+      { space | vel = space.vel |+ impulse }
   ) model
 
 -- system calls

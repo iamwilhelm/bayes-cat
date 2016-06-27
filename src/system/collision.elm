@@ -49,21 +49,34 @@ collisionInteractionMsg interactor (selfM, otherM) =
     Just <| interactor selfM otherM
 
 impulseMsg : (Vec -> Vec -> Cmd msg) -> Manifold -> Manifold -> Cmd msg
-impulseMsg impulseMsg self other =
+impulseMsg msg self other =
   let
-    normal = other.space.pos |- self.space.pos
-    rv = other.space.vel |- self.space.vel
-    normalVel = dot rv normal
+    -- FIXME WIP. The physics of the collision isn't working correctly
+    restitution = min self.coll.restitution other.coll.restitution
+    m1 = self.space.mass
+    v1 = self.space.vel
+    x1 = self.space.pos
+    m2 = other.space.mass
+    v2 = other.space.vel
+    x2 = other.space.pos
+
+    n = x2 |- x1
+    un = n ./ (norm n)
+    ut = Vec.orthogonal un
+    v = v2 |- v1
+    vn = Vec.dot un v
+    v1n = Vec.dot un v1
+    v1t = Vec.dot ut v1
+    v2n = Vec.dot un v2
+    v2t = Vec.dot ut v2
+    v1n' = un .* ((v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2))
+    v1t' = ut .* v1t
+    v2n' = un .* ((v2n * (m2 - m1) + 2 * m1 * v1n) / (m2 + m1))
+    v2t' = ut .* v2t
+    v1' = v1n' |+ v1t'
+    v2' = v2n' |+ v2t'
   in
-    if normalVel <= 0 then
-      let
-        restitution = min self.coll.restitution other.coll.restitution
-        impulseScalar = -(1 + restitution) * normalVel / (1 / self.space.mass + 1 / other.space.mass)
-        impulse = normal .* impulseScalar
-      in
-        impulseMsg (Vec.neg impulse) impulse
-    else
-      Cmd.none
+    msg v1 (Vec.neg v2)
 
 --collisionAlgo1 : Entity.Model -> Manifold -> Entity.Model
 --collisionAlgo1 self ((selfSpace, selfColl), (otherSpace, otherColl)) =

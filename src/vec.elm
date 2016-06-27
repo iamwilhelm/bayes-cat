@@ -62,6 +62,10 @@ norm : Vec -> Float
 norm v =
   sqrt <| normSqr v
 
+orthogonal : Vec -> Vec
+orthogonal (x, y) =
+  (-y, x)
+
 clamp : Vec -> Vec -> Vec -> Vec
 clamp min max v =
   ( Basics.clamp (fst min) (fst max) (x v)

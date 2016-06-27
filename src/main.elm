@@ -50,14 +50,14 @@ init =
         Entity.Camera.init 1
       , Entity.Platform.init 10 (-100, -150)
       --, Entity.Cat.init 20
-      , Entity.Egg.init 21 (-200, 100) (0, -1)
-      , Entity.Egg.init 22 (-200, -150) (0, 4)
+      --, Entity.Egg.init 21 (-200, 100) (0, -1)
+      --, Entity.Egg.initC 22 (-200, 0) (0, 4)
       , Entity.Egg.init 23 (-100, 100) (2, 0)
-      , Entity.Egg.init 24 (100, 100) (-2, 0)
-      , Entity.Egg.init 25 (200, 300) (2, 2)
-      , Entity.Egg.init 26 (300, 200) (-4, 2)
-      , Entity.Egg.init 27 (150, 200) (2, 2)
-      , Entity.Egg.init 28 (50, 200) (-4, 2)
+      , Entity.Egg.initC 24 (100, 100) (-2, 0)
+      --, Entity.Egg.init 25 (200, 300) (2, 2)
+      --, Entity.Egg.init 26 (300, 200) (-4, 2)
+      --, Entity.Egg.init 27 (150, 200) (2, 2)
+      --, Entity.Egg.init 28 (50, 200) (-4, 2)
       ]
     , nextEntityId = 7
     , seed = Random.initialSeed 0
@@ -154,7 +154,7 @@ effects : Float -> Model -> List (Cmd Msg)
 effects dt model =
   let
     effects = List.filterMap (System.Collision.detect interact) (pairs model.entities)
-    _ = Debug.log "effects: " <| List.length effects
+    _ = 3 -- Debug.log "effects: " <| List.length effects
   in
     effects
 
